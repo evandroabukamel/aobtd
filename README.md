@@ -144,7 +144,7 @@ src/
 - Leaflet em renderização por canvas: milhares de marcadores sem um nó DOM por marcador.
 - Mapa num chunk separado, carregado sob demanda; o painel de contadores aparece antes.
 - Todos os contadores numa única requisição; a lista de fontes só é buscada ao clicar.
-- Cache no cliente (TanStack Query) alinhado à frequência da coleta.
+- Cache no cliente (TanStack Query) de 6h por filtro, alinhado à janela de coleta: voltar a um filtro já consultado não gera nova requisição.
 
 ## Testes
 
