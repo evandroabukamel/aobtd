@@ -115,6 +115,30 @@ Ferramentas expostas, todas com respostas curtas (uma linha por item):
 
 Os marcadores vêm como tuplas `[id, lat, lng, vítimas, epoch]` para reduzir o tamanho da resposta. As respostas têm `ETag` e `Cache-Control`.
 
+## Organização do site (`apps/web`)
+
+O frontend segue Clean Architecture: as dependências apontam sempre para dentro (`presentation` → `application` → `domain`), e só a raiz de composição (`app/`) conhece a implementação HTTP.
+
+```
+src/
+  domain/            Regras puras, sem React: filtros, calendário UTC, entidades
+  application/       Casos de uso em hooks: estado da tela e consultas (TanStack Query)
+    ports/           Interface AccidentRepository (o que a aplicação precisa da API)
+  infrastructure/    Implementações das portas: repositório sobre fetch
+  presentation/      React, organizado em Atomic Design
+    components/
+      atoms/         ToggleButton, CloseButton, Badge, StatusMessage, BarMeter
+      molecules/     StatCard, MonthBar, YearSelect, FactList, SourceItem, MapCaption
+      organisms/     AppHeader, CountersPanel, AccidentPanel, CrashMap
+      templates/     DashboardTemplate (cabeçalho, mapa e barra lateral)
+    pages/           DashboardPage: liga estado e consultas aos componentes
+    shared/          Formatação (datas, meses, rótulos)
+  app/               Raiz de composição: QueryClient e injeção do repositório
+  main.tsx           Ponto de entrada
+```
+
+Átomos, moléculas, organismos e templates só recebem dados por props; quem busca dados é a página. Para trocar a origem dos dados (outra API, dados de teste), basta outra implementação de `AccidentRepository` passada em `app/App.tsx`.
+
 ## Desempenho no site
 
 - Leaflet em renderização por canvas: milhares de marcadores sem um nó DOM por marcador.
