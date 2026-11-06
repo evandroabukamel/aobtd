@@ -60,7 +60,15 @@ async function locate(geocoder: Geocoder, candidates: string[]) {
   return null;
 }
 
-export async function scanSource(deps: ScanDeps, source: SourceRow): Promise<ScanSummary> {
+/** Opções da recuperação histórica: outra URL da mesma fonte e outra janela de datas. */
+export interface ScanOptions {
+  /** URL alternativa (ex.: busca do Google News restrita a um período). Desliga o GET condicional. */
+  url?: string;
+  /** Itens anteriores a esta data são ignorados. Padrão: últimos MAX_AGE_DAYS dias. */
+  since?: Date;
+}
+
+export async function scanSource(deps: ScanDeps, source: SourceRow, opts: ScanOptions = {}): Promise<ScanSummary> {
   const { db, geocoder } = deps;
   const now = deps.now?.() ?? new Date();
   const summary: ScanSummary = {
@@ -73,15 +81,15 @@ export async function scanSource(deps: ScanDeps, source: SourceRow): Promise<Sca
   const runId = run.rows[0]!.id;
 
   try {
-    const res = await fetchText(source.feed_url, {
-      etag: source.etag,
-      lastModified: source.last_modified,
+    const res = await fetchText(opts.url ?? source.feed_url, {
+      etag: opts.url ? null : source.etag,
+      lastModified: opts.url ? null : source.last_modified,
       fetchFn: deps.fetchFn,
     });
     if (res.status === 'not_modified') {
       summary.status = 'not_modified';
     } else {
-      const minDate = now.getTime() - MAX_AGE_DAYS * 24 * 3600_000;
+      const minDate = opts.since?.getTime() ?? now.getTime() - MAX_AGE_DAYS * 24 * 3600_000;
       const items = parse(source, res.body).filter(
         (i) => (i.occurredAt ?? i.publishedAt ?? now).getTime() >= minDate,
       );
@@ -120,10 +128,12 @@ export async function scanSource(deps: ScanDeps, source: SourceRow): Promise<Sca
         }
       }
     }
-    await db.query(
-      `UPDATE sources SET etag = $2, last_modified = $3, last_status = $4, last_error = NULL WHERE id = $1`,
-      [source.id, res.etag, res.lastModified, summary.status],
-    );
+    if (!opts.url) {
+      await db.query(
+        `UPDATE sources SET etag = $2, last_modified = $3, last_status = $4, last_error = NULL WHERE id = $1`,
+        [source.id, res.etag, res.lastModified, summary.status],
+      );
+    }
   } catch (err) {
     summary.status = 'error';
     summary.error = err instanceof Error ? err.message : String(err);
