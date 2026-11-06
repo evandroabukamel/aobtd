@@ -1,0 +1,62 @@
+import { describe, expect, it } from 'vitest';
+import {
+  cleanTitle, extractAircraft, extractFatalities, extractLocations, extractOccurredAt, isMannedCrash,
+} from '../src/extract.js';
+
+describe('filtro de relevância', () => {
+  it.each([
+    'Small plane crashes near Austin, killing 2',
+    'Helicopter crashed off the coast of Norway',
+    'Avião de pequeno porte cai em Ubatuba e deixa dois mortos',
+    'Queda de helicóptero em Minas Gerais',
+    "Un avion de tourisme s'est écrasé près de Lyon",
+    'Kleinflugzeug bei Stuttgart abgestürzt',
+  ])('aceita queda de aeronave tripulada: %s', (t) => expect(isMannedCrash(t)).toBe(true));
+
+  it.each([
+    'Drone crashes into stadium during match',
+    'Military drone crashed near the border',
+    'Stock market crash hits airline shares',
+    'Boeing reports quarterly earnings',
+    'Missile shot down plane over sea',
+    'Aeromodelo cai em praça de São Paulo',
+  ])('rejeita: %s', (t) => expect(isMannedCrash(t)).toBe(false));
+});
+
+describe('extração', () => {
+  it('encontra o local', () => {
+    expect(extractLocations('Small plane crashes near Austin, Texas, killing 2')[0]).toBe('Austin, Texas');
+    expect(extractLocations('Avião de pequeno porte cai em Ubatuba e deixa dois mortos')[0]).toBe('Ubatuba');
+    expect(extractLocations('Helicopter crashed on Monday in Rio de Janeiro')[0]).toBe('Rio de Janeiro');
+    expect(extractLocations("Un avion s'est écrasé près de Lyon")[0]).toBe('Lyon');
+  });
+
+  it('ignora palavras que não são lugares', () => {
+    expect(extractLocations('Plane crashed in March, NTSB says')).toEqual([]);
+  });
+
+  it('extrai vítimas', () => {
+    expect(extractFatalities('Small plane crashes, killing 2')).toBe(2);
+    expect(extractFatalities('Crash leaves three dead')).toBe(3);
+    expect(extractFatalities('Avião cai e deixa dois mortos')).toBe(2);
+    expect(extractFatalities('Queda de avião mata 4')).toBe(4);
+    expect(extractFatalities('Pilot survives crash')).toBe(0);
+    expect(extractFatalities('Plane crashes in field')).toBeUndefined();
+  });
+
+  it('extrai modelo da aeronave', () => {
+    expect(extractAircraft('A Cessna 172 crashed near Ocala')).toBe('Cessna 172');
+    expect(extractAircraft('Robinson R44 helicopter went down')).toBe('Robinson R44');
+  });
+
+  it('limpa o sufixo do Google News', () => {
+    expect(cleanTitle('Small plane crashes near Austin - Reuters')).toBe('Small plane crashes near Austin');
+  });
+
+  it('ajusta data para "ontem"', () => {
+    const pub = new Date('2026-11-05T10:00:00Z');
+    expect(extractOccurredAt('Plane crashed yesterday', pub, new Date('2026-11-05T12:00:00Z')).toISOString()).toBe(
+      '2026-11-04T10:00:00.000Z',
+    );
+  });
+});

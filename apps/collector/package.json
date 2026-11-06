@@ -1,0 +1,21 @@
+{
+  "name": "@aobtd/collector",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Servidor MCP que coleta notícias de quedas de aeronaves tripuladas e grava no PostgreSQL",
+  "bin": { "aobtd-collector": "dist/index.js" },
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsx watch src/index.ts --http",
+    "start": "node dist/index.js",
+    "start:http": "node dist/index.js --http"
+  },
+  "dependencies": {
+    "@aobtd/core": "*",
+    "@modelcontextprotocol/sdk": "^1.32.0",
+    "cheerio": "^1.2.0",
+    "fast-xml-parser": "^5.3.0",
+    "zod": "^4.1.0"
+  }
+}

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Test</title>
+<item><title>Small plane crashes near Austin, Texas, killing 2 - Reuters</title>
+<link>https://example.com/a1</link><pubDate>Thu, 05 Nov 2026 10:00:00 GMT</pubDate>
+<description>&lt;p&gt;A Cessna 172 went down shortly after takeoff.&lt;/p&gt;</description></item>
+<item><title>Two dead as light aircraft crashes outside Austin</title>
+<link>https://example.com/a2</link><pubDate>Thu, 05 Nov 2026 14:00:00 GMT</pubDate></item>
+<item><title>Drone crashes into stadium in Austin</title>
+<link>https://example.com/d1</link><pubDate>Thu, 05 Nov 2026 11:00:00 GMT</pubDate></item>
+<item><title>Election results in Ohio</title>
+<link>https://example.com/x1</link><pubDate>Thu, 05 Nov 2026 11:00:00 GMT</pubDate></item>
+<item><title>Avião de pequeno porte cai em Ubatuba</title>
+<link>https://example.com/b1</link><pubDate>Wed, 04 Nov 2026 20:00:00 GMT</pubDate></item>
+<item><title>Old crash: helicopter crashed near Denver</title>
+<link>https://example.com/old</link><pubDate>Mon, 01 Jan 2024 10:00:00 GMT</pubDate></item>
+</channel></rss>
