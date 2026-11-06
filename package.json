@@ -1,0 +1,22 @@
+{
+  "name": "aobtd",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "build": "tsc -b packages/core apps/collector apps/api && npm run build -w @aobtd/web",
+    "typecheck": "tsc -b packages/core apps/collector apps/api && npm run typecheck -w @aobtd/web",
+    "test": "vitest run",
+    "db:migrate": "npm run build -w @aobtd/core && node packages/core/dist/migrate.js",
+    "dev:api": "npm run dev -w @aobtd/api",
+    "dev:web": "npm run dev -w @aobtd/web",
+    "dev:collector": "npm run dev -w @aobtd/collector"
+  },
+  "engines": { "node": ">=20.11" },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "~5.9.3",
+    "vitest": "^5.1.0"
+  }
+}
