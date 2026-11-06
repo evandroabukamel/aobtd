@@ -1,6 +1,6 @@
 import 'leaflet/dist/leaflet.css';
 import { memo, useMemo } from 'react';
-import { CircleMarker, MapContainer, TileLayer, Tooltip } from 'react-leaflet';
+import { AttributionControl, CircleMarker, MapContainer, TileLayer, Tooltip } from 'react-leaflet';
 import { hasKnownFatalities, type AccidentMarker } from '../../../domain/accident';
 import { formatDate } from '../../shared/format';
 
@@ -46,7 +46,9 @@ function CrashMap({ markers, selected, onSelect }: Props) {
   );
 
   return (
-    <MapContainer center={[10, 0]} zoom={2} minZoom={2} worldCopyJump preferCanvas className="map">
+    <MapContainer center={[10, 0]} zoom={2} minZoom={2} worldCopyJump preferCanvas attributionControl={false} className="map">
+      {/* prefix vazio remove o "Leaflet" antes da atribuição do OpenStreetMap. */}
+      <AttributionControl prefix="" />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
