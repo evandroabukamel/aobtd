@@ -35,7 +35,7 @@ describe.skipIf(!url)('API', () => {
     await db?.end();
   });
 
-  it('marcadores das últimas 24h em formato compacto', async () => {
+  it('last 24h markers in compact format', async () => {
     const res = await app.inject('/api/accidents?period=24h');
     expect(res.statusCode).toBe(200);
     expect(res.headers['cache-control']).toContain('max-age=60');
@@ -44,33 +44,33 @@ describe.skipIf(!url)('API', () => {
     expect(body.markers[0]).toEqual([1, 30.2672, -97.7431, 2, expect.any(Number)]);
   });
 
-  it('marcadores de um ano anterior', async () => {
+  it('markers of a previous year', async () => {
     const body = (await app.inject(`/api/accidents?period=month&year=${y - 1}`)).json();
     expect(body.markers.map((m: number[]) => m[0])).toEqual([3]);
     const june = (await app.inject(`/api/accidents?period=month&year=${y - 1}&month=6`)).json();
     expect(june.total).toBe(1);
   });
 
-  it('contadores e anos disponíveis', async () => {
+  it('counters and available years', async () => {
     const body = (await app.inject(`/api/stats?year=${y - 1}`)).json();
     expect(body).toMatchObject({ last24h: 1, yearTotal: 1, years: [y, y - 1] });
     expect(body.months[5]).toBe(1);
     expect(body.months).toHaveLength(12);
   });
 
-  it('detalhe com a lista de fontes', async () => {
+  it('detail with the list of sources', async () => {
     const body = (await app.inject('/api/accidents/1')).json();
     expect(body.location).toBe('Austin');
     expect(body.articles).toHaveLength(2);
     expect(body.articles[0]).toMatchObject({ source: 'NTSB', sourceKind: 'government' });
   });
 
-  it('valida parâmetros e 404', async () => {
+  it('validates parameters and 404', async () => {
     expect((await app.inject('/api/accidents?period=week')).statusCode).toBe(400);
     expect((await app.inject('/api/accidents/999')).statusCode).toBe(404);
   });
 
-  it('ETag permite 304', async () => {
+  it('ETag allows 304', async () => {
     const first = await app.inject('/api/accidents/1');
     const second = await app.inject({ url: '/api/accidents/1', headers: { 'if-none-match': first.headers.etag as string } });
     expect(second.statusCode).toBe(304);

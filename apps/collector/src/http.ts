@@ -1,4 +1,4 @@
-/** Cliente HTTP enxuto: timeout, limite de tamanho e GET condicional (ETag / Last-Modified). */
+/** Lean HTTP client: timeout, size limit and conditional GET (ETag / Last-Modified). */
 
 export const USER_AGENT =
   process.env.COLLECTOR_USER_AGENT ?? 'aobtd-crash-monitor/1.0 (+https://github.com/evandroabukamel/aobtd)';
@@ -33,10 +33,10 @@ export async function fetchText(
   if (res.status === 304) {
     return { status: 'not_modified', body: '', etag: opts.etag ?? null, lastModified: opts.lastModified ?? null };
   }
-  if (!res.ok) throw new Error(`HTTP ${res.status} em ${url}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status} at ${url}`);
   const length = Number(res.headers.get('content-length') ?? 0);
-  if (length > MAX_BYTES) throw new Error(`resposta grande demais (${length} bytes)`);
+  if (length > MAX_BYTES) throw new Error(`response too large (${length} bytes)`);
   const body = await res.text();
-  if (body.length > MAX_BYTES) throw new Error('resposta grande demais');
+  if (body.length > MAX_BYTES) throw new Error('response too large');
   return { status: 'ok', body, etag: res.headers.get('etag'), lastModified: res.headers.get('last-modified') };
 }

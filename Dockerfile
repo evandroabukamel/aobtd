@@ -1,4 +1,4 @@
-# Uma imagem para os dois processos (API+site e coletor MCP); o comando escolhe qual roda.
+# One image for both processes (API+site and MCP collector); the command picks which one runs.
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.base.json ./

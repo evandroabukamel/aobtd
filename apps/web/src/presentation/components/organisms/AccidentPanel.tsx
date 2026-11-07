@@ -1,5 +1,5 @@
 import type { AccidentDetail } from '../../../domain/accident';
-import { formatDate } from '../../shared/format';
+import { useI18n } from '../../../i18n/I18nContext';
 import { CloseButton } from '../atoms/CloseButton';
 import { StatusMessage } from '../atoms/StatusMessage';
 import { FactList } from '../molecules/FactList';
@@ -12,26 +12,27 @@ interface Props {
   onClose: () => void;
 }
 
-/** Detalhes e lista de fontes do acidente selecionado no mapa. */
+/** Details and source list of the accident selected on the map. */
 export function AccidentPanel({ accident, isLoading, isError, onClose }: Props) {
+  const { t, fmt } = useI18n();
   return (
     <section className="panel" aria-live="polite">
       <div className="panel-head">
-        <h2>{accident?.location ?? 'Acidente'}</h2>
-        <CloseButton onClick={onClose} />
+        <h2>{accident?.location ?? t.accident}</h2>
+        <CloseButton onClick={onClose} label={t.close} />
       </div>
-      {isLoading && <StatusMessage tone="muted">Carregando fontes…</StatusMessage>}
-      {isError && <StatusMessage tone="error">Não foi possível carregar as fontes.</StatusMessage>}
+      {isLoading && <StatusMessage tone="muted">{t.loadingSources}</StatusMessage>}
+      {isError && <StatusMessage tone="error">{t.sourcesError}</StatusMessage>}
       {accident && (
         <>
           <FactList
             facts={[
-              { term: 'Data', value: formatDate(accident.occurredAt) },
-              { term: 'Aeronave', value: accident.aircraft ?? 'não informada' },
-              { term: 'Vítimas fatais', value: accident.fatalities ?? 'não informado' },
+              { term: t.date, value: fmt.date(accident.occurredAt) },
+              { term: t.aircraft, value: accident.aircraft ?? t.notReported },
+              { term: t.fatalities, value: accident.fatalities ?? t.notReported },
             ]}
           />
-          <h3>Fontes ({accident.articles.length})</h3>
+          <h3>{t.sources(accident.articles.length)}</h3>
           <ul className="sources">
             {accident.articles.map((a) => (
               <SourceItem key={a.url} article={a} />

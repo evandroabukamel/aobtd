@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAccidentRepository } from '../AccidentRepositoryContext';
 import { queryKeys } from './queryKeys';
 
-/** Fontes de um acidente: só é buscado quando há um marcador selecionado. */
+/** Sources of one accident: only fetched while a marker is selected. */
 export function useAccident(id: number | null) {
   const repo = useAccidentRepository();
   return useQuery({

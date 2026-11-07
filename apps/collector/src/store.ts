@@ -17,11 +17,11 @@ export interface ArticleInput {
   publishedAt?: Date;
 }
 
-/** Janela e raio usados para considerar duas notícias como o mesmo acidente. */
+/** Time window and radius used to treat two articles as the same accident. */
 export const MERGE_WINDOW_HOURS = 48;
 export const MERGE_RADIUS_KM = 60;
 
-/** Devolve as URLs já gravadas, para não reprocessar itens repetidos do feed. */
+/** Returns the URLs already stored, so repeated feed items are not processed again. */
 export async function knownUrls(db: Db, urls: string[]): Promise<Set<string>> {
   if (urls.length === 0) return new Set();
   const { rows } = await db.query<{ url: string }>('SELECT url FROM articles WHERE url = ANY($1::text[])', [urls]);
@@ -29,8 +29,8 @@ export async function knownUrls(db: Db, urls: string[]): Promise<Set<string>> {
 }
 
 /**
- * Grava a notícia e a associa a um acidente existente (mesma janela de tempo e raio)
- * ou a um novo. Retorna o id do acidente e se ele foi criado agora.
+ * Stores the article and links it to an existing accident (same time window and radius)
+ * or to a new one. Returns the accident id and whether it was just created.
  */
 export async function saveArticle(
   db: Db,
@@ -40,7 +40,7 @@ export async function saveArticle(
   const client = await db.connect();
   try {
     await client.query('BEGIN');
-    // Serializa a deduplicação: dois scans simultâneos não criam o mesmo acidente duas vezes.
+    // Serializes deduplication: two concurrent scans don't create the same accident twice.
     await client.query('SELECT pg_advisory_xact_lock(4242)');
 
     const exists = await client.query('SELECT 1 FROM articles WHERE url = $1', [article.url]);
@@ -66,7 +66,7 @@ export async function saveArticle(
     let created = false;
     if (match.rows[0]) {
       accidentId = match.rows[0].id;
-      // Completa dados que a notícia nova traga e a anterior não tinha.
+      // Fills in data the new article brings and the earlier one lacked.
       await client.query(
         `UPDATE accidents SET
            aircraft   = COALESCE(aircraft, $2),

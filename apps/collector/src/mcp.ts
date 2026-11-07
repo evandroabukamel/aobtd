@@ -5,11 +5,11 @@ import { claimSource, formatSummary, loadSources, runDueScans, scanSource, type 
 import { nextRun } from './schedule.js';
 
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] });
-const hhmm = (d: Date | null) => (d ? d.toISOString().slice(0, 16).replace('T', ' ') + 'Z' : 'nunca');
+const hhmm = (d: Date | null) => (d ? d.toISOString().slice(0, 16).replace('T', ' ') + 'Z' : 'never');
 
 /**
- * Ferramentas MCP do coletor. As respostas são texto curto, uma linha por item,
- * para gastar poucos tokens no cliente que chamar o servidor.
+ * The collector's MCP tools. Replies are short text, one line per item,
+ * so the client calling the server spends few tokens.
  */
 export function createMcpServer(deps: ScanDeps): McpServer {
   const server = new McpServer({ name: 'aobtd-collector', version: '0.1.0' });
@@ -18,16 +18,16 @@ export function createMcpServer(deps: ScanDeps): McpServer {
   server.registerTool(
     'list_sources',
     {
-      description: 'Lista as fontes monitoradas, a janela diária de cada uma (UTC) e o estado da última varredura.',
+      description: 'Lists the monitored sources, the daily window of each one (UTC) and the state of the last scan.',
       annotations: { readOnlyHint: true },
     },
     async () => {
       const now = new Date();
       const lines = (await loadSources(db)).map(
         (s) =>
-          `${s.slug} | ${s.enabled ? 'ativa' : 'desligada'} | janela ${String(s.scan_slot * 6).padStart(2, '0')}h | ` +
-          `última ${hhmm(s.last_scan_at)} (${s.last_status ?? '-'}) | próxima ${hhmm(nextRun(s.scan_slot, s.last_scan_at, now))}` +
-          (s.last_error ? ` | erro: ${s.last_error}` : ''),
+          `${s.slug} | ${s.enabled ? 'enabled' : 'disabled'} | window ${String(s.scan_slot * 6).padStart(2, '0')}h | ` +
+          `last ${hhmm(s.last_scan_at)} (${s.last_status ?? '-'}) | next ${hhmm(nextRun(s.scan_slot, s.last_scan_at, now))}` +
+          (s.last_error ? ` | error: ${s.last_error}` : ''),
       );
       return text(lines.join('\n'));
     },
@@ -37,11 +37,11 @@ export function createMcpServer(deps: ScanDeps): McpServer {
     'run_due_scans',
     {
       description:
-        'Varre as fontes cuja janela diária já começou e que ainda não foram varridas neste período. Cada fonte é varrida no máximo uma vez por dia.',
+        'Scans the sources whose daily window has started and that were not scanned yet in this period. Each source is scanned at most once a day.',
     },
     async () => {
       const results = await runDueScans(deps);
-      return text(results.length ? results.map(formatSummary).join('\n') : 'Nenhuma fonte pendente agora.');
+      return text(results.length ? results.map(formatSummary).join('\n') : 'No source is due right now.');
     },
   );
 
@@ -49,14 +49,14 @@ export function createMcpServer(deps: ScanDeps): McpServer {
     'scan_source',
     {
       description:
-        'Varre uma fonte específica. Sem force, respeita o limite de uma varredura por dia; force=true ignora o limite (uso manual).',
-      inputSchema: { slug: z.string().describe('Identificador da fonte, ex.: "bbc"'), force: z.boolean().optional() },
+        'Scans one source. Without force it respects the one-scan-a-day limit; force=true ignores it (manual use).',
+      inputSchema: { slug: z.string().describe('Source identifier, e.g. "bbc"'), force: z.boolean().optional() },
     },
     async ({ slug, force }) => {
       const source = (await loadSources(db)).find((s) => s.slug === slug);
-      if (!source) return { ...text(`Fonte "${slug}" não encontrada.`), isError: true };
+      if (!source) return { ...text(`Source "${slug}" not found.`), isError: true };
       if (!(await claimSource(db, source, new Date(), force ?? false))) {
-        return text(`${slug}: já varrida neste período (${hhmm(source.last_scan_at)}). Use force=true para repetir.`);
+        return text(`${slug}: already scanned in this period (${hhmm(source.last_scan_at)}). Use force=true to repeat.`);
       }
       return text(formatSummary(await scanSource(deps, source)));
     },
@@ -65,7 +65,7 @@ export function createMcpServer(deps: ScanDeps): McpServer {
   server.registerTool(
     'query_accidents',
     {
-      description: 'Lista acidentes gravados: últimas 24h, mês atual, ou um mês/ano específico.',
+      description: 'Lists stored accidents: last 24h, current month, or a specific month/year.',
       inputSchema: {
         period: z.enum(['24h', 'month', 'year']),
         year: z.number().int().min(1900).max(2100).optional(),
@@ -91,13 +91,13 @@ export function createMcpServer(deps: ScanDeps): McpServer {
           GROUP BY a.id ORDER BY a.occurred_at DESC LIMIT $3`,
         [range.from, range.to, limit ?? 20],
       );
-      if (!rows.length) return text('Nenhum acidente no período.');
+      if (!rows.length) return text('No accidents in the period.');
       return text(
         rows
           .map(
             (r) =>
               `#${r.id} ${r.occurred_at.toISOString().slice(0, 10)} | ${r.location_name ?? '?'} | ` +
-              `${r.aircraft ?? 'aeronave ?'} | vítimas ${r.fatalities ?? '?'} | ${r.n} fonte(s)`,
+              `${r.aircraft ?? 'aircraft ?'} | fatalities ${r.fatalities ?? '?'} | ${r.n} source(s)`,
           )
           .join('\n'),
       );

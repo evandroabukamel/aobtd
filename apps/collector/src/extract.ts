@@ -1,6 +1,7 @@
 /**
- * Extração por regras (sem LLM, custo zero de tokens): decide se a notícia trata de
- * queda de aeronave tripulada e tenta tirar local, vítimas, modelo e data.
+ * Rule-based extraction (no LLM, zero token cost): decides whether a news item is about
+ * a manned aircraft crash and tries to pull out location, fatalities, model and date.
+ * The keyword lists are multilingual on purpose: they match news in PT, EN, FR and DE.
  */
 
 const AIRCRAFT =
@@ -10,15 +11,15 @@ const CRASH =
   /\b(crash(?:es|ed|-lands?|-landed)?|went down|plunged|caiu|cai\b|queda|acidente a[ée]reo|desastre a[ée]reo|se acidentou|s'est [ée]cras[ée]|[ée]crasement|accident d'avion|abgest[üu]rzt|absturz|st[üu]rzt[e]? ab)/i;
 
 /**
- * Termos que indicam aeronave não tripulada ou assunto fora do escopo: falhas de segurança,
- * inspeções e processos judiciais não são quedas.
+ * Terms that point to an unmanned aircraft or an off-topic story: safety flaws,
+ * inspections and lawsuits are not crashes.
  */
 const EXCLUDE =
   /\b(drones?|uavs?|unmanned|remotely piloted|model (?:aircraft|plane)|aeromodel\w*|vant|missiles?|rockets?|satellites?|foguete|m[íi]sseis?|m[íi]ssil|simulator|simulador|flight sim|stock|market crash|shot down|abatid[oa]s?|abgeschossen|drohnen?|mandates?|inspections?|airworthiness|recalls?|lawsuits?|sues|wrongful death|anniversary|years? after|anos? (?:ap[óo]s|depois)|risks? (?:of|detach\w*)|could)\b/i;
 
 /**
- * Notícia que cita um ano anterior ao da publicação ("Final report on 2024 jet crash"):
- * é desdobramento de acidente antigo e gravaria a data errada.
+ * News citing a year before its publication ("Final report on 2024 jet crash"):
+ * a follow-up on an old accident, which would be stored with the wrong date.
  */
 export function mentionsEarlierYear(text: string, publishedAt: Date | undefined): boolean {
   if (!publishedAt) return false;
@@ -26,7 +27,7 @@ export function mentionsEarlierYear(text: string, publishedAt: Date | undefined)
   return [...text.matchAll(/\b(19[5-9]\d|20\d\d)\b/g)].some((m) => Number(m[1]) < year);
 }
 
-/** Assunto fora do escopo (drone, inspeção, processo...), mesmo quando cita uma queda. */
+/** Off-topic subject (drone, inspection, lawsuit...), even when it mentions a crash. */
 export function isOffTopic(text: string): boolean {
   return EXCLUDE.test(text);
 }
@@ -93,7 +94,7 @@ const NOT_PLACES = new Set([
   'brasil', 'brazil', 'day', 'dia', 'video', 'vídeo', 'photos', 'fotos', 'live', 'update',
 ]);
 
-/** Remove o sufixo " - Veículo" que o Google News acrescenta ao título. */
+/** Removes the " - Outlet" suffix Google News appends to the title. */
 export function cleanTitle(title: string): string {
   return title.replace(/\s+[-–|]\s+[^-–|]{2,40}$/, '').trim();
 }
@@ -118,16 +119,16 @@ const US_STATES: Record<string, string> = {
 const PORTUGUESE = /\b(avi[aã]o|helic[oó]ptero|aeronave|queda|caiu|cai|mortos?|monomotor|ultraleve)\b/i;
 
 /**
- * Siglas de estado (MG, SC, NSW...) viram nomes completos com o país, para o geocodificador
- * não confundir "MG" com Madagascar ou "SC" com Seicheles. Siglas desconhecidas (aeroportos
- * como LGA) são descartadas.
+ * State codes (MG, SC, NSW...) become full names with the country, so the geocoder does not
+ * mistake "MG" for Madagascar or "SC" for the Seychelles. Unknown codes (airports such as
+ * LGA) are dropped.
  */
 const CITY_CODES: Record<string, string> = {
   LA: 'Los Angeles, California, USA', NYC: 'New York City, USA', DC: 'Washington, D.C., USA', MIA: 'Miami, Florida, USA',
   BH: 'Belo Horizonte, Brasil', POA: 'Porto Alegre, Brasil',
 };
 
-/** Abreviações de estado no estilo da AP ("Lafayette, La."), só usadas depois de vírgula. */
+/** AP-style state abbreviations ("Lafayette, La."), only used after a comma. */
 const AP_STATES: Record<string, string> = {
   Ala: 'Alabama', Ariz: 'Arizona', Ark: 'Arkansas', Calif: 'California', Colo: 'Colorado', Conn: 'Connecticut',
   Del: 'Delaware', Fla: 'Florida', Ga: 'Georgia', Ill: 'Illinois', Ind: 'Indiana', Kan: 'Kansas', Ky: 'Kentucky',
@@ -145,7 +146,7 @@ function expandAbbreviations(place: string, portuguese: boolean): string | null 
   };
   const isCode = (s: string) => /^[A-Z][A-Za-z.]{0,3}$/.test(s) && s.replace(/\./g, '').length <= 4 && s === s.toUpperCase()
     || /^(Que|Ont|Alta)\.?$/.test(s);
-  // Sozinhas, estas siglas costumam ser cidades ("crash in LA" = Los Angeles), não estados.
+  // On their own these codes are usually cities ("crash in LA" = Los Angeles), not states.
   if (CITY_CODES[place]) return CITY_CODES[place]!;
   if (isCode(place)) return expand(place);
   const m = place.match(/^(.+),\s*([A-Za-z.]{2,5})$/);
@@ -158,7 +159,7 @@ function expandAbbreviations(place: string, portuguese: boolean): string | null 
   return place;
 }
 
-/** Candidatos a local, do mais provável ao menos provável. */
+/** Location candidates, from most to least likely. */
 export function extractLocations(text: string): string[] {
   const out: string[] = [];
   const portuguese = PORTUGUESE.test(text);
@@ -173,7 +174,7 @@ export function extractLocations(text: string): string[] {
   return out;
 }
 
-/** Ajusta a data quando o texto diz "ontem" / "yesterday". */
+/** Shifts the date when the text says "yesterday" / "ontem". */
 export function extractOccurredAt(text: string, publishedAt: Date | undefined, now: Date): Date {
   const base = publishedAt && publishedAt.getTime() <= now.getTime() ? publishedAt : now;
   if (/\b(yesterday|ontem|hier|gestern)\b/i.test(text)) return new Date(base.getTime() - 24 * 3600_000);

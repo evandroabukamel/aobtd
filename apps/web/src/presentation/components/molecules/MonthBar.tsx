@@ -11,7 +11,7 @@ interface Props {
   onClick: () => void;
 }
 
-/** Um mês do histograma; meses futuros ficam desabilitados e sem número. */
+/** One month of the histogram; future months are disabled and show no number. */
 export function MonthBar({ label, ariaLabel, count, ratio, disabled, active, onClick }: Props) {
   return (
     <ToggleButton active={active} disabled={disabled} onClick={onClick} aria-label={ariaLabel}>

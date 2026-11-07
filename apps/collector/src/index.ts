@@ -8,7 +8,7 @@ import { createMcpServer } from './mcp.js';
 import type { ScanDeps } from './scanner.js';
 import { startScheduler } from './scheduler.js';
 
-// No modo stdio, stdout é o canal do protocolo MCP: logs vão sempre para stderr.
+// In stdio mode stdout is the MCP protocol channel: logs always go to stderr.
 const log = (msg: string) => process.stderr.write(`[collector] ${new Date().toISOString()} ${msg}\n`);
 
 async function main() {
@@ -18,11 +18,11 @@ async function main() {
 
   if (process.env.COLLECTOR_SCHEDULER !== 'off') {
     startScheduler(deps, Number(process.env.COLLECTOR_TICK_MS ?? 5 * 60_000));
-    log('agendador ligado (janelas 00h, 06h, 12h e 18h UTC)');
+    log('scheduler on (windows at 00h, 06h, 12h and 18h UTC)');
   }
 
   if (process.argv.includes('--http')) {
-    // Transporte Streamable HTTP sem sessão: um servidor MCP por requisição, sem estado em memória.
+    // Stateless Streamable HTTP transport: one MCP server per request, no in-memory state.
     const port = Number(process.env.MCP_HTTP_PORT ?? 3333);
     createServer(async (req, res) => {
       if (req.url === '/health') {
@@ -44,7 +44,7 @@ async function main() {
     }).listen(port, () => log(`MCP HTTP em http://localhost:${port}/mcp`));
   } else {
     await createMcpServer(deps).connect(new StdioServerTransport());
-    log('MCP stdio pronto');
+    log('MCP stdio ready');
   }
 
   const shutdown = () => void db.end().finally(() => process.exit(0));

@@ -1,14 +1,14 @@
-/** Item bruto extraído de uma fonte, antes da filtragem e geocodificação. */
+/** Raw item extracted from a source, before filtering and geocoding. */
 export interface RawItem {
   url: string;
   title: string;
   summary?: string;
   publishedAt?: Date;
-  /** Campos já estruturados pela fonte (ex.: Aviation Safety Network). */
+  /** Fields already structured by the source (e.g. Aviation Safety Network). */
   occurredAt?: Date;
   location?: string;
   aircraft?: string;
   fatalities?: number;
-  /** true quando a fonte já é uma base de acidentes: dispensa o filtro de palavras-chave. */
+  /** true when the source is already an accident database: skips the keyword filter. */
   structured?: boolean;
 }

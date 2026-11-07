@@ -10,7 +10,7 @@ export function markersPath(f: Filter): string {
   return `/api/accidents?${q}`;
 }
 
-/** Implementação do repositório sobre a API HTTP (`apps/api`). */
+/** Repository implementation over the HTTP API (`apps/api`). */
 export function createHttpAccidentRepository(get: HttpGet = fetchJson): AccidentRepository {
   return {
     listMarkers: (filter, signal) => get<AccidentMarkers>(markersPath(filter), signal),

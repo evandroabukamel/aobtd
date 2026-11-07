@@ -16,7 +16,7 @@ const geocoder: Geocoder = { geocode: async (q) => places[q.toLowerCase()] ?? nu
 const fetchFn = (async () => new Response(rss, { headers: { etag: '"v1"' } })) as typeof fetch;
 const now = () => new Date('2026-11-05T15:00:00Z');
 
-describe.skipIf(!url)('coleta com PostgreSQL', () => {
+describe.skipIf(!url)('collection with PostgreSQL', () => {
   let db: Db;
 
   beforeAll(async () => {
@@ -30,10 +30,10 @@ describe.skipIf(!url)('coleta com PostgreSQL', () => {
   });
   afterAll(() => db?.end());
 
-  it('filtra, geocodifica e agrupa notícias do mesmo acidente', async () => {
+  it('filters, geocodes and groups articles about the same accident', async () => {
     const [bbc] = (await loadSources(db)).filter((s) => s.slug === 'bbc');
     const summary = await scanSource({ db, geocoder, fetchFn, now }, bbc!);
-    // a1 + a2 (Austin, mesmo acidente), b1 (Ubatuba). Drone, eleição e notícia antiga ficam de fora.
+    // a1 + a2 (Austin, same accident), b1 (Ubatuba). Drone, election and old news are left out.
     expect(summary).toMatchObject({ status: 'ok', seen: 5, relevant: 3, newArticles: 3, newAccidents: 2 });
 
     const { rows } = await db.query(
@@ -49,17 +49,17 @@ describe.skipIf(!url)('coleta com PostgreSQL', () => {
     expect(again.newArticles).toBe(0);
   });
 
-  it('varre cada fonte só uma vez por período', async () => {
+  it('scans each source only once per period', async () => {
     const deps = { db, geocoder, fetchFn, now };
     const first = await runDueScans(deps);
-    // Às 15h UTC as janelas 00h, 06h e 12h já abriram; a das 18h foi aberta ontem e também está pendente.
+    // At 15h UTC the 00h, 06h and 12h windows are open; the 18h one opened yesterday and is due too.
     expect(first).toHaveLength((await loadSources(db)).length);
     expect(await runDueScans(deps)).toHaveLength(0);
 
     const tomorrow = { ...deps, now: () => new Date('2026-11-06T06:30:00Z') };
     const second = await runDueScans(tomorrow);
-    // Às 06h30 do dia seguinte: janelas 00h e 06h de hoje e a das 18h de ontem (varrida pela última vez às 15h).
-    // A janela das 12h (ap, aaib, tsb) ainda está no período em que já foi varrida.
+    // At 06:30 the next day: today's 00h and 06h windows and yesterday's 18h one (last scanned at 15h).
+    // The 12h window (ap, aaib, tsb) is still in the period in which it was scanned.
     const slugs = new Set(second.map((s) => s.source));
     expect(slugs.has('ap') || slugs.has('aaib') || slugs.has('tsb')).toBe(false);
     expect(slugs.size).toBe((await loadSources(db)).length - 3);

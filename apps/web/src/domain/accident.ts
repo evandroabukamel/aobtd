@@ -1,6 +1,6 @@
 /**
- * Entidades do domínio. Os contratos vêm do pacote compartilhado com a API,
- * então o frontend só os reexporta (somente tipos, nada vai para o bundle).
+ * Domain entities. The contracts come from the package shared with the API,
+ * so the frontend only re-exports them (types only, nothing reaches the bundle).
  */
 export type {
   AccidentDetailResponse as AccidentDetail,
@@ -11,5 +11,5 @@ export type {
   StatsResponse as AccidentStats,
 } from '@aobtd/core';
 
-/** No marcador, -1 significa número de vítimas desconhecido. */
+/** In a marker, -1 means the number of fatalities is unknown. */
 export const hasKnownFatalities = (fatalities: number) => fatalities >= 0;

@@ -1,4 +1,4 @@
-/** Recorte de tempo exibido no mapa: últimas 24h, um mês ou um ano inteiro. */
+/** Time range shown on the map: last 24h, one month or a whole year. */
 export type Filter = { kind: '24h' } | { kind: 'period'; year: number; month?: number };
 
 export const Filters = {

@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { currentYearMonth } from '../domain/calendar';
 import { Filters, type Filter } from '../domain/filter';
 
-/** Estado da tela: filtro do mapa, ano dos contadores e acidente selecionado. */
+/** Screen state: map filter, counters year and selected accident. */
 export function useDashboardState() {
   const [now] = useState(() => new Date());
   const [filter, setFilter] = useState<Filter>(() => {

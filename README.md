@@ -1,160 +1,184 @@
-# Monitor de quedas de aeronaves
+# Aircraft crash monitor
 
-Página web com um mapa das quedas de **aeronaves tripuladas** nas últimas 24 horas, no mês atual e em cada mês de qualquer ano, com contadores ao lado do mapa. Ao clicar num marcador, aparece a lista de notícias e comunicados oficiais que citam o acidente.
+A web page with a map of **manned aircraft** crashes in the last 24 hours, in the current month and in each month of any year, with counters next to the map. Clicking a marker shows the list of news reports and official statements that mention the accident.
 
-A coleta é feita por um **servidor MCP**, que varre cada fonte uma vez por dia e grava tudo no **PostgreSQL**.
+The site is available in 10 languages: Portuguese (Brazil), Portuguese (Portugal), English, Spanish, German, French, Simplified Chinese, Japanese, Russian and Ukrainian. The flag button in the top right corner opens a language menu.
 
-## Arquitetura
+Collection is done by an **MCP server**, which scans each source once a day and stores everything in **PostgreSQL**.
 
-```
-apps/collector   Servidor MCP + agendador: lê as fontes, filtra, geocodifica e grava
-apps/api         API HTTP (Fastify) que também serve o site em produção
-apps/web         Site em React + Vite + Leaflet
-packages/core    Tipos compartilhados, conexão e migrações do banco
-```
+## Architecture
 
 ```
-fontes (RSS/Atom/HTML) ──► collector (MCP) ──► PostgreSQL ◄── api ◄── web
-                                  ▲
-                    cliente MCP (Claude, etc.)
+apps/collector   MCP server + scheduler: reads the sources, filters, geocodes and stores
+apps/api         HTTP API (Fastify) that also serves the site in production
+apps/web         Site in React + Vite + Leaflet
+packages/core    Shared types, database connection and migrations
 ```
 
-### Agenda de coleta
+```
+sources (RSS/Atom/HTML) ──► collector (MCP) ──► PostgreSQL ◄── api ◄── web
+                                   ▲
+                     MCP client (Claude, etc.)
+```
 
-Cada fonte pertence a uma de quatro janelas diárias: **00h, 06h, 12h e 18h UTC** (coluna `sources.scan_slot`). Assim cada site é varrido **uma vez por dia**, e há 6h entre um grupo de fontes e o seguinte.
+### Collection schedule
 
-O controle fica no banco: antes de varrer, o coletor "reserva" a fonte com um `UPDATE` atômico que só passa se ela ainda não foi varrida no período. Reiniciar o processo ou subir mais de uma instância não gera varreduras extras, e uma janela perdida com o servidor desligado é recuperada quando ele volta.
+Each source belongs to one of four daily windows: **00h, 06h, 12h and 18h UTC** (column `sources.scan_slot`). So each site is scanned **once a day**, with 6h between one group of sources and the next.
 
-### Como uma notícia vira um marcador
+The control lives in the database: before scanning, the collector "claims" the source with an atomic `UPDATE` that only succeeds if it hasn't been scanned in the period yet. Restarting the process or running more than one instance doesn't cause extra scans, and a window missed while the server was down is caught up when it comes back.
 
-1. **Download econômico:** GET condicional (`ETag`/`Last-Modified`), limite de tamanho e timeout. URLs já gravadas são descartadas antes de qualquer processamento.
-2. **Filtro por regras, sem LLM** (custo zero de tokens): a notícia precisa citar uma aeronave e uma queda (em português, inglês, francês ou alemão) e não pode tratar de drones, aeromodelos, mísseis, satélites etc.
-3. **Extração:** local, número de vítimas, modelo da aeronave e data ("ontem" é ajustado).
-4. **Geocodificação** pelo Nominatim (OpenStreetMap), no máximo 1 consulta por segundo e com cache permanente no banco (inclusive para locais não encontrados). Notícias sem local identificável não entram no mapa.
-5. **Agrupamento:** notícias a até 60 km e 48h uma da outra viram o mesmo acidente, que passa a listar todas as fontes.
+### How a news item becomes a marker
 
-### Fontes
+1. **Thrifty download:** conditional GET (`ETag`/`Last-Modified`), size limit and timeout. URLs already stored are dropped before any processing.
+2. **Rule-based filter, no LLM** (zero token cost): the item must mention an aircraft and a crash (in Portuguese, English, French or German) and must not be about drones, model aircraft, missiles, satellites, inspections, recalls or lawsuits. Items that cite a year before their publication are follow-ups on old accidents and are dropped too.
+3. **Extraction:** location, number of fatalities ("6 aboard, no survivors" counts as 6), aircraft model and date ("yesterday" is adjusted). State codes such as MG, SC or NSW are expanded to the full name and country before geocoding.
+4. **Geocoding** with Nominatim (OpenStreetMap), at most 1 query per second and with a permanent cache in the database (not-found places included). Items without an identifiable location don't go on the map.
+5. **Grouping:** items within 60 km and 48h of each other become the same accident, which then lists every source.
 
-| Janela | Fonte | Tipo | Como é lida |
+### Sources
+
+| Window | Source | Kind | How it is read |
 |---|---|---|---|
-| 00h | Aviation Safety Network (Flight Safety Foundation) | Base de dados | Lista do Wikibase (HTML), só danos `w/o` e `sub` |
-| 00h | BBC News | Agência | RSS |
-| 00h | CENIPA (FAB) | Órgão oficial | Busca RSS do Google News |
-| 06h | Reuters | Agência | Busca RSS do Google News (`site:reuters.com`) |
-| 06h | NTSB (EUA) | Órgão oficial | Busca RSS do Google News |
-| 06h | BEA (França) | Órgão oficial | Busca RSS do Google News |
-| 12h | Associated Press | Agência | Busca RSS do Google News (`site:apnews.com`) |
-| 12h | AAIB (Reino Unido) | Órgão oficial | Atom do gov.uk |
-| 12h | TSB (Canadá) | Órgão oficial | Busca RSS do Google News |
-| 18h | Agência Brasil (EBC) | Agência | RSS |
-| 18h | ATSB (Austrália) | Órgão oficial | Busca RSS do Google News |
-| 18h | FAA (EUA) | Órgão oficial | Busca RSS do Google News |
-| 18h | BFU (Alemanha) | Órgão oficial | Busca RSS do Google News |
+| 00h | Aviation Safety Network (Flight Safety Foundation) | Database | Wikibase list (HTML), only `w/o` and `sub` damage |
+| 00h | BBC News | Agency | RSS |
+| 00h | CENIPA (Brazilian Air Force) | Official body | Google News RSS search |
+| 06h | Reuters | Agency | Google News RSS search (`site:reuters.com`) |
+| 06h | NTSB (USA) | Official body | Google News RSS search |
+| 06h | BEA (France) | Official body | Google News RSS search |
+| 12h | Associated Press | Agency | Google News RSS search (`site:apnews.com`) |
+| 12h | AAIB (United Kingdom) | Official body | gov.uk Atom feed |
+| 12h | TSB (Canada) | Official body | Google News RSS search |
+| 18h | Agência Brasil (EBC) | Agency | RSS |
+| 18h | ATSB (Australia) | Official body | Google News RSS search |
+| 18h | FAA (USA) | Official body | Google News RSS search |
+| 18h | BFU (Germany) | Official body | Google News RSS search |
 
-Reuters, AP e a maioria dos órgãos de investigação não publicam RSS próprio; para eles a busca do Google News já filtra por acidentes e devolve poucos itens. As fontes ficam na tabela `sources` e podem ser ligadas, desligadas ou trocadas de janela sem mudar código.
+Reuters, AP and most investigation bodies don't publish their own RSS; for them the Google News search already filters for accidents and returns few items. Sources live in the `sources` table and can be enabled, disabled or moved to another window without code changes.
 
-## Como rodar
+The ASN website currently answers automated requests with HTTP 403, so that source gets no data.
 
-### Com Docker
+## Running it
+
+### With Docker
 
 ```bash
 docker compose up --build
 ```
 
-- Site e API: http://localhost:3000
-- Servidor MCP (Streamable HTTP): http://localhost:3333/mcp
+- Site and API: http://localhost:3000
+- MCP server (Streamable HTTP): http://localhost:3333/mcp
 
-### Em desenvolvimento
+### In development
 
-Requer Node.js 20.11+ e PostgreSQL 14+.
+Requires Node.js 20.11+ and PostgreSQL 14+.
 
 ```bash
-cp .env.example .env          # ajuste DATABASE_URL
+cp .env.example .env          # set DATABASE_URL
 npm install
 npm run db:migrate
-npm run dev:api               # API em :3000
-npm run dev:web               # site em :5173 (proxy para a API)
-npm run dev:collector         # coletor MCP em :3333 com o agendador ligado
+npm run dev:api               # API on :3000
+npm run dev:web               # site on :5173 (proxies to the API)
+npm run dev:collector         # MCP collector on :3333 with the scheduler on
 ```
 
-### Ligando o MCP a um cliente
+### Backfilling and reprocessing
 
-Por stdio (o cliente inicia o processo):
+```bash
+npm run backfill -w @aobtd/collector -- 2026   # collects a whole year, ignoring the 6h interval
+npm run repair -w @aobtd/collector             # applies the current extraction rules to stored accidents
+```
+
+The backfill swaps the `when:2d` clause of the Google News searches for 10-day `after:`/`before:` windows. Neither command uses an LLM.
+
+### Connecting the MCP server to a client
+
+Over stdio (the client starts the process):
 
 ```json
 {
   "mcpServers": {
     "aobtd": {
       "command": "node",
-      "args": ["/caminho/para/aobtd/apps/collector/dist/index.js"],
+      "args": ["/path/to/aobtd/apps/collector/dist/index.js"],
       "env": { "DATABASE_URL": "postgres://aobtd:aobtd@localhost:5432/aobtd", "COLLECTOR_SCHEDULER": "off" }
     }
   }
 }
 ```
 
-Use `COLLECTOR_SCHEDULER=off` quando outro processo (por exemplo o container `collector`) já cuida do agendamento.
+Use `COLLECTOR_SCHEDULER=off` when another process (for example the `collector` container) already handles the schedule.
 
-Ferramentas expostas, todas com respostas curtas (uma linha por item):
+Exposed tools, all with short replies (one line per item):
 
-| Ferramenta | O que faz |
+| Tool | What it does |
 |---|---|
-| `list_sources` | Fontes, janela, última e próxima varredura |
-| `run_due_scans` | Varre as fontes cuja janela chegou |
-| `scan_source` | Varre uma fonte (`force: true` ignora o limite diário) |
-| `query_accidents` | Lista acidentes das últimas 24h, do mês ou de um ano/mês |
+| `list_sources` | Sources, window, last and next scan |
+| `run_due_scans` | Scans the sources whose window has come |
+| `scan_source` | Scans one source (`force: true` ignores the daily limit) |
+| `query_accidents` | Lists accidents from the last 24h, the month, or a year/month |
 
 ## API
 
-| Rota | Resposta |
+| Route | Response |
 |---|---|
-| `GET /api/accidents?period=24h` | Marcadores das últimas 24h |
-| `GET /api/accidents?period=month[&year=2026][&month=3]` | Mês atual, um mês ou um ano inteiro (sem `month`) |
-| `GET /api/stats?year=2026` | Contadores: 24h, mês atual, total do ano, 12 meses e anos disponíveis |
-| `GET /api/accidents/:id` | Detalhes e lista de fontes do acidente |
+| `GET /api/accidents?period=24h` | Markers of the last 24h |
+| `GET /api/accidents?period=month[&year=2026][&month=3]` | Current month, one month, or a whole year (no `month`) |
+| `GET /api/stats?year=2026` | Counters: 24h, current month, year total, 12 months and available years |
+| `GET /api/accidents/:id` | Details and list of sources of the accident |
 
-Os marcadores vêm como tuplas `[id, lat, lng, vítimas, epoch]` para reduzir o tamanho da resposta. As respostas têm `ETag` e `Cache-Control`.
+Markers come as `[id, lat, lng, fatalities, epoch]` tuples to keep responses small. Responses carry `ETag` and `Cache-Control`.
 
-## Organização do site (`apps/web`)
+## Site structure (`apps/web`)
 
-O frontend segue Clean Architecture: as dependências apontam sempre para dentro (`presentation` → `application` → `domain`), e só a raiz de composição (`app/`) conhece a implementação HTTP.
+The frontend follows Clean Architecture: dependencies always point inwards (`presentation` → `application` → `domain`), and only the composition root (`app/`) knows the HTTP implementation.
 
 ```
 src/
-  domain/            Regras puras, sem React: filtros, calendário UTC, entidades
-  application/       Casos de uso em hooks: estado da tela e consultas (TanStack Query)
-    ports/           Interface AccidentRepository (o que a aplicação precisa da API)
-  infrastructure/    Implementações das portas: repositório sobre fetch
-  presentation/      React, organizado em Atomic Design
+  domain/            Pure rules, no React: filters, UTC calendar, entities
+  application/       Use cases as hooks: screen state and queries (TanStack Query)
+    ports/           AccidentRepository interface (what the application needs from the API)
+  infrastructure/    Port implementations: repository over fetch
+  i18n/              Typed dictionaries per language, Intl formatters, language detection
+  presentation/      React, organized with Atomic Design
     components/
       atoms/         ToggleButton, CloseButton, Badge, StatusMessage, BarMeter
-      molecules/     StatCard, MonthBar, YearSelect, FactList, SourceItem, MapCaption
+      molecules/     StatCard, MonthBar, YearSelect, FactList, SourceItem, MapCaption, LanguageSwitcher
       organisms/     AppHeader, CountersPanel, AccidentPanel, CrashMap
-      templates/     DashboardTemplate (cabeçalho, mapa e barra lateral)
-    pages/           DashboardPage: liga estado e consultas aos componentes
-    shared/          Formatação (datas, meses, rótulos)
-  app/               Raiz de composição: QueryClient e injeção do repositório
-  main.tsx           Ponto de entrada
+      templates/     DashboardTemplate (header, map and sidebar)
+    pages/           DashboardPage: wires state and queries to the components
+    shared/          Small UI helpers
+  app/               Composition root: I18nProvider, QueryClient and repository injection
+  main.tsx           Entry point
 ```
 
-Átomos, moléculas, organismos e templates só recebem dados por props; quem busca dados é a página. Para trocar a origem dos dados (outra API, dados de teste), basta outra implementação de `AccidentRepository` passada em `app/App.tsx`.
+Atoms, molecules, organisms and templates only receive data through props; the page is what fetches data. To change the data origin (another API, test data), pass another `AccidentRepository` implementation in `app/App.tsx`.
 
-## Desempenho no site
+### Languages
 
-- Leaflet em renderização por canvas: milhares de marcadores sem um nó DOM por marcador.
-- Mapa num chunk separado, carregado sob demanda; o painel de contadores aparece antes.
-- Todos os contadores numa única requisição; a lista de fontes só é buscada ao clicar.
-- Cache no cliente (TanStack Query) de 6h por filtro, alinhado à janela de coleta: voltar a um filtro já consultado não gera nova requisição.
+- Every string lives in `src/i18n/locales/<tag>.ts`, typed by the `Messages` interface, so a missing translation is a compile error.
+- Month names, dates and numbers come from `Intl` in the chosen language, with no hand-written lists.
+- The first visit picks the closest match to the browser languages (falling back to English); the choice is then kept in `localStorage`.
+- Flags come from the `flag-icons` package (only the 10 used are bundled), except the Spanish one, which is a light local SVG.
+- News titles are shown in their original language.
 
-## Testes
+To add a language, create a file in `src/i18n/locales/` and add an entry to `LOCALES` in `src/i18n/locales.ts`.
+
+## Site performance
+
+- Leaflet with canvas rendering: thousands of markers without one DOM node per marker.
+- The map is in a separate chunk loaded on demand; the counters panel shows up first.
+- All counters in a single request; the source list is only fetched on click.
+- Client cache (TanStack Query) of 6h per filter, matching the collection window: going back to a filter already fetched sends no new request.
+
+## Tests
 
 ```bash
-npm test                                                     # testes de unidade
-TEST_DATABASE_URL=postgres://.../aobtd_test npm test         # inclui integração (apaga o schema public desse banco!)
+npm test                                                     # unit tests
+TEST_DATABASE_URL=postgres://.../aobtd_test npm test         # includes integration (wipes that database's public schema!)
 ```
 
-## Limitações conhecidas
+## Known limitations
 
-- A extração de local é feita por regras; títulos sem nome de lugar ficam fora do mapa (são contados no resumo da varredura como "sem local").
-- As URLs das fontes não puderam ser validadas no ambiente onde o projeto foi criado. Depois da primeira varredura, `list_sources` mostra o status de cada uma.
-- A lista da ASN é lida pelo cabeçalho da tabela; se o layout mudar muito, o parser em `apps/collector/src/parsers/asn.ts` precisa de ajuste.
+- Location extraction is rule-based; titles without a place name stay off the map (counted as "without location" in the scan summary).
+- Only article titles are stored, so fatalities that appear only in the article body are not picked up by `repair`.
+- The ASN list is read through the table header; if the layout changes a lot, the parser in `apps/collector/src/parsers/asn.ts` needs updating.

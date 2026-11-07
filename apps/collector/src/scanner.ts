@@ -27,7 +27,7 @@ export interface ScanSummary {
   error?: string;
 }
 
-/** Itens mais antigos que isso são ignorados: o monitor cobre o presente, não o histórico. */
+/** Items older than this are ignored: the monitor covers the present, not history. */
 const MAX_AGE_DAYS = 7;
 
 export async function loadSources(db: Db): Promise<SourceRow[]> {
@@ -36,8 +36,8 @@ export async function loadSources(db: Db): Promise<SourceRow[]> {
 }
 
 /**
- * Reserva a fonte para este período de forma atômica: se outro processo já a varreu
- * (ou está varrendo) neste período, devolve false. Garante uma varredura diária por fonte.
+ * Claims the source for this period atomically: if another process already scanned it
+ * (or is scanning it) in this period, returns false. Ensures one daily scan per source.
  */
 export async function claimSource(db: Db, source: SourceRow, now: Date, force = false): Promise<boolean> {
   const res = await db.query(
@@ -60,11 +60,11 @@ async function locate(geocoder: Geocoder, candidates: string[]) {
   return null;
 }
 
-/** Opções da recuperação histórica: outra URL da mesma fonte e outra janela de datas. */
+/** Backfill options: another URL of the same source and another date window. */
 export interface ScanOptions {
-  /** URL alternativa (ex.: busca do Google News restrita a um período). Desliga o GET condicional. */
+  /** Alternative URL (e.g. a Google News search limited to a period). Turns off the conditional GET. */
   url?: string;
-  /** Itens anteriores a esta data são ignorados. Padrão: últimos MAX_AGE_DAYS dias. */
+  /** Items before this date are ignored. Default: the last MAX_AGE_DAYS days. */
   since?: Date;
 }
 
@@ -148,7 +148,7 @@ export async function scanSource(deps: ScanDeps, source: SourceRow, opts: ScanOp
   return summary;
 }
 
-/** Varre, uma a uma, as fontes cuja janela diária chegou e que ainda não foram varridas no período. */
+/** Scans, one by one, the sources whose daily window has come and that were not scanned yet in the period. */
 export async function runDueScans(deps: ScanDeps): Promise<ScanSummary[]> {
   const now = deps.now?.() ?? new Date();
   const results: ScanSummary[] = [];
@@ -160,10 +160,10 @@ export async function runDueScans(deps: ScanDeps): Promise<ScanSummary[]> {
   return results;
 }
 
-/** Linha curta por fonte: mantém pequenas as respostas do MCP (economia de tokens). */
+/** One short line per source: keeps MCP replies small (saves tokens). */
 export function formatSummary(s: ScanSummary): string {
-  if (s.status === 'error') return `${s.source}: erro (${s.error})`;
-  if (s.status === 'not_modified') return `${s.source}: sem novidades`;
-  if (s.status === 'skipped') return `${s.source}: já varrida neste período`;
-  return `${s.source}: ${s.seen} itens, ${s.relevant} relevantes, ${s.newArticles} notícias novas, ${s.newAccidents} acidentes novos, ${s.unlocated} sem local`;
+  if (s.status === 'error') return `${s.source}: error (${s.error})`;
+  if (s.status === 'not_modified') return `${s.source}: nothing new`;
+  if (s.status === 'skipped') return `${s.source}: already scanned in this period`;
+  return `${s.source}: ${s.seen} items, ${s.relevant} relevant, ${s.newArticles} new articles, ${s.newAccidents} new accidents, ${s.unlocated} without location`;
 }

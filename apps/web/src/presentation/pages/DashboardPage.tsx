@@ -3,19 +3,20 @@ import { useAccident } from '../../application/queries/useAccident';
 import { useMarkers } from '../../application/queries/useMarkers';
 import { useStats } from '../../application/queries/useStats';
 import { useDashboardState } from '../../application/useDashboardState';
+import { useI18n } from '../../i18n/I18nContext';
 import { StatusMessage } from '../components/atoms/StatusMessage';
 import { MapCaption } from '../components/molecules/MapCaption';
 import { AccidentPanel } from '../components/organisms/AccidentPanel';
 import { AppHeader } from '../components/organisms/AppHeader';
 import { CountersPanel } from '../components/organisms/CountersPanel';
 import { DashboardTemplate } from '../components/templates/DashboardTemplate';
-import { describeFilter } from '../shared/format';
 
-// Leaflet só é baixado quando o mapa é montado (chunk separado).
+// Leaflet is only downloaded when the map mounts (separate chunk).
 const CrashMap = lazy(() => import('../components/organisms/CrashMap'));
 
-/** Única página do site: liga o estado e as consultas aos componentes visuais. */
+/** The site's only page: wires state and queries to the visual components. */
 export function DashboardPage() {
+  const { t, describeFilter } = useI18n();
   const { now, filter, year, selectedId, changeFilter, changeYear, selectAccident, clearSelection } = useDashboardState();
   const stats = useStats(year);
   const markers = useMarkers(filter);
@@ -27,16 +28,13 @@ export function DashboardPage() {
       mapBusy={markers.isFetching}
       map={
         <>
-          <MapCaption
-            title={describeFilter(filter)}
-            detail={markers.data ? `${markers.data.total} no mapa` : 'carregando…'}
-          />
-          <Suspense fallback={<div className="map-placeholder">Carregando mapa…</div>}>
+          <MapCaption title={describeFilter(filter)} detail={markers.data ? t.onMap(markers.data.total) : t.loading} />
+          <Suspense fallback={<div className="map-placeholder">{t.loadingMap}</div>}>
             <CrashMap markers={markers.data?.markers ?? []} selected={selectedId} onSelect={selectAccident} />
           </Suspense>
           {markers.isError && (
             <StatusMessage tone="error" as="div">
-              Não foi possível carregar os acidentes.
+              {t.loadError}
             </StatusMessage>
           )}
         </>

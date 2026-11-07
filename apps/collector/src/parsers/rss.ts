@@ -7,7 +7,7 @@ const parser = new XMLParser({
   textNodeName: '#text',
   processEntities: true,
   htmlEntities: true,
-  // Evita custo de parse em elementos que nunca usamos.
+  // Avoids parsing elements we never use.
   stopNodes: ['*.content:encoded', '*.content'],
 });
 
@@ -46,7 +46,7 @@ function atomLink(v: unknown): string {
   return '';
 }
 
-/** Lê RSS 2.0 e Atom e devolve itens normalizados. */
+/** Reads RSS 2.0 and Atom and returns normalized items. */
 export function parseFeed(xml: string): RawItem[] {
   const doc = parser.parse(xml) as Record<string, any>;
   const items: RawItem[] = [];

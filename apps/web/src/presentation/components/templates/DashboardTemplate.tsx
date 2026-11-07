@@ -7,7 +7,7 @@ interface Props {
   mapBusy: boolean;
 }
 
-/** Esqueleto da tela: cabeçalho, mapa à esquerda e barra lateral à direita. */
+/** Screen skeleton: header, map on the left and sidebar on the right. */
 export function DashboardTemplate({ header, map, sidebar, mapBusy }: Props) {
   return (
     <div className="layout">
