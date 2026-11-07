@@ -15,7 +15,7 @@ function fakeRepo() {
   } satisfies AccidentRepository;
 }
 
-describe('cache dos filtros', () => {
+describe('filter cache', () => {
   let client: QueryClient;
   beforeEach(() => {
     vi.useFakeTimers();
@@ -26,17 +26,17 @@ describe('cache dos filtros', () => {
     vi.useRealTimers();
   });
 
-  it.each([Filters.last24h(), Filters.month(2026, 3), Filters.year(2025)])('não repete a consulta de %o', async (filter) => {
+  it.each([Filters.last24h(), Filters.month(2026, 3), Filters.year(2025)])('does not refetch %o', async (filter) => {
     const repo = fakeRepo();
     await client.fetchQuery(markersQuery(repo, filter));
     await client.fetchQuery(markersQuery(repo, Filters.month(2020, 1)));
-    // Bem depois do cache padrão de 5 min e do gcTime padrão de 30 min.
+    // Well past the default 5 min cache and the default 30 min gcTime.
     await vi.advanceTimersByTimeAsync(5 * 60 * 60_000);
     await client.fetchQuery(markersQuery(repo, filter));
     expect(repo.listMarkers).toHaveBeenCalledTimes(2);
   });
 
-  it('consulta de novo depois de 6 horas', async () => {
+  it('fetches again after 6 hours', async () => {
     const repo = fakeRepo();
     await client.fetchQuery(markersQuery(repo, Filters.month(2026, 3)));
     await vi.advanceTimersByTimeAsync(FILTER_CACHE_MS + 1);
@@ -44,7 +44,7 @@ describe('cache dos filtros', () => {
     expect(repo.listMarkers).toHaveBeenCalledTimes(2);
   });
 
-  it('guarda os contadores de cada ano', async () => {
+  it('keeps the counters of each year', async () => {
     const repo = fakeRepo();
     await client.fetchQuery(statsQuery(repo, 2026));
     await client.fetchQuery(statsQuery(repo, 2025));

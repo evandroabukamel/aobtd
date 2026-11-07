@@ -14,9 +14,9 @@ export interface Geocoder {
 const ACCEPTED_CATEGORIES = new Set(['place', 'boundary', 'natural', 'aeroway', 'waterway', 'water', 'landuse']);
 
 /**
- * Geocodificador Nominatim (OpenStreetMap) com cache permanente no PostgreSQL
- * (inclusive resultados negativos) e no máximo 1 requisição por segundo,
- * como pede a política de uso do serviço.
+ * Nominatim (OpenStreetMap) geocoder with a permanent cache in PostgreSQL
+ * (negative results included) and at most 1 request per second,
+ * as the service usage policy asks.
  */
 export class NominatimGeocoder implements Geocoder {
   private last = 0;
@@ -64,7 +64,7 @@ export class NominatimGeocoder implements Geocoder {
       headers: { 'user-agent': this.opts.userAgent ?? process.env.GEOCODER_USER_AGENT ?? USER_AGENT },
       signal: AbortSignal.timeout(15_000),
     });
-    if (!res.ok) throw new Error(`geocodificação falhou: HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`geocoding failed: HTTP ${res.status}`);
     const [hit] = (await res.json()) as Array<{
       lat: string;
       lon: string;

@@ -1,6 +1,7 @@
 /**
- * Extração por regras (sem LLM, custo zero de tokens): decide se a notícia trata de
- * queda de aeronave tripulada e tenta tirar local, vítimas, modelo e data.
+ * Rule-based extraction (no LLM, zero token cost): decides whether a news item is about
+ * a manned aircraft crash and tries to pull out location, fatalities, model and date.
+ * The keyword lists are multilingual on purpose: they match news in PT, EN, FR and DE.
  */
 
 const AIRCRAFT =
@@ -9,9 +10,27 @@ const AIRCRAFT =
 const CRASH =
   /\b(crash(?:es|ed|-lands?|-landed)?|went down|plunged|caiu|cai\b|queda|acidente a[ée]reo|desastre a[ée]reo|se acidentou|s'est [ée]cras[ée]|[ée]crasement|accident d'avion|abgest[üu]rzt|absturz|st[üu]rzt[e]? ab)/i;
 
-/** Termos que indicam aeronave não tripulada ou assunto fora do escopo. */
+/**
+ * Terms that point to an unmanned aircraft or an off-topic story: safety flaws,
+ * inspections and lawsuits are not crashes.
+ */
 const EXCLUDE =
-  /\b(drones?|uavs?|unmanned|remotely piloted|model (?:aircraft|plane)|aeromodel\w*|vant|missiles?|rockets?|satellites?|foguete|m[íi]sseis?|m[íi]ssil|simulator|simulador|flight sim|stock|market crash|shot down|abatid[oa]s?|abgeschossen|drohnen?)\b/i;
+  /\b(drones?|uavs?|unmanned|remotely piloted|model (?:aircraft|plane)|aeromodel\w*|vant|missiles?|rockets?|satellites?|foguete|m[íi]sseis?|m[íi]ssil|simulator|simulador|flight sim|stock|market crash|shot down|abatid[oa]s?|abgeschossen|drohnen?|mandates?|inspections?|airworthiness|recalls?|lawsuits?|sues|wrongful death|anniversary|years? after|anos? (?:ap[óo]s|depois)|risks? (?:of|detach\w*)|could)\b/i;
+
+/**
+ * News citing a year before its publication ("Final report on 2024 jet crash"):
+ * a follow-up on an old accident, which would be stored with the wrong date.
+ */
+export function mentionsEarlierYear(text: string, publishedAt: Date | undefined): boolean {
+  if (!publishedAt) return false;
+  const year = publishedAt.getUTCFullYear();
+  return [...text.matchAll(/\b(19[5-9]\d|20\d\d)\b/g)].some((m) => Number(m[1]) < year);
+}
+
+/** Off-topic subject (drone, inspection, lawsuit...), even when it mentions a crash. */
+export function isOffTopic(text: string): boolean {
+  return EXCLUDE.test(text);
+}
 
 export function isMannedCrash(text: string): boolean {
   return AIRCRAFT.test(text) && CRASH.test(text) && !EXCLUDE.test(text);
@@ -24,19 +43,27 @@ const NUMBER_WORDS: Record<string, number> = {
 
 export function extractFatalities(text: string): number | undefined {
   const num = '(\\d{1,4}|' + Object.keys(NUMBER_WORDS).join('|') + ')';
+  const value = (v: string) => NUMBER_WORDS[v.toLowerCase()] ?? Number(v);
   const patterns = [
     new RegExp(`\\b(?:kill(?:s|ed|ing)?|leaves?|left)\\s+(?:all\\s+)?${num}\\b`, 'i'),
-    new RegExp(`\\b${num}\\s+(?:people\\s+|persons\\s+|passengers\\s+)?(?:killed|dead|die[sd]?|fatalities|mortos?|mortas?|morrem|morreram|v[íi]timas fatais|morts?|tote?)\\b`, 'i'),
-    new RegExp(`\\b(?:mata|deixa)\\s+${num}\\b`, 'i'),
+    new RegExp(`\\b${num}\\s+(?:people\\s+|persons\\s+|passengers\\s+|pessoas\\s+)?(?:killed|dead|die[sd]?|fatalities|mortos?|mortas?|mortes|morrem|morreram|v[íi]timas fatais|morts?|tote?)\\b`, 'i'),
+    new RegExp(`\\b(?:mata|matou|deixa|deixou)\\s+${num}\\b`, 'i'),
   ];
   for (const re of patterns) {
     const m = text.match(re);
-    if (m?.[1]) {
-      const v = m[1].toLowerCase();
-      return NUMBER_WORDS[v] ?? Number(v);
-    }
+    if (m?.[1]) return value(m[1]);
   }
-  if (/\b(no (?:one|injuries)|sem feridos|ningu[ée]m (?:morreu|se feriu)|survive[ds]?|sobrevive\w*)\b/i.test(text)) return 0;
+  // "matou cantor Rick e outros 4" / "killed the pilot and 3 others"
+  const others = text.match(new RegExp(`\\b(?:matou|mata|kill(?:s|ed|ing)?)\\b[^.;]{0,60}?\\b(?:e outr[oa]s|and)\\s+${num}\\s*(?:others|outr|$|\\b)`, 'i'));
+  if (others?.[1] && /\b(outr[oa]s|others)\b/i.test(others[0])) return value(others[1]) + 1;
+  if (/\b(?:matou|mata|kill(?:s|ed|ing)?)\s+(?:o\s+|the\s+|its\s+)?(?:piloto|pilot)\b|\bpilot (?:was )?killed\b|\bpiloto morre\b/i.test(text)) return 1;
+  // "with 6 aboard, no survivors" / "com 4 pessoas a bordo; não houve sobreviventes"
+  const noSurvivors = /\b(no survivors|none survived|no one survived|nobody survived|all (?:were )?killed|sem sobreviventes|n[ãa]o houve sobreviventes|ningu[ée]m sobreviveu|todos morreram)\b/i;
+  if (noSurvivors.test(text)) {
+    const aboard = text.match(new RegExp(`\\b${num}\\s+(?:people\\s+|persons\\s+|passengers\\s+|pessoas\\s+|ocupantes\\s+)?(?:aboard|on board|a bordo)\\b`, 'i'));
+    return aboard?.[1] ? value(aboard[1]) : undefined;
+  }
+  if (/\b(no (?:one )?(?:injuries|hurt|injured)|sem feridos|ningu[ée]m (?:morreu|se feriu)|survive[ds]|sobrevive(?:u|ram|m)?)\b/i.test(text)) return 0;
   return undefined;
 }
 
@@ -64,19 +91,82 @@ const NOT_PLACES = new Set([
   'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo',
   'the', 'a', 'an', 'o', 'os', 'as', 'um', 'uma', 'ntsb', 'faa', 'cenipa', 'bea', 'aaib', 'atsb', 'tsb', 'bfu',
   'reuters', 'ap', 'bbc', 'cessna', 'piper', 'boeing', 'airbus', 'embraer', 'beechcraft', 'robinson', 'bell',
-  'brasil', 'brazil', 'video', 'vídeo', 'photos', 'fotos', 'live', 'update',
+  'brasil', 'brazil', 'day', 'dia', 'video', 'vídeo', 'photos', 'fotos', 'live', 'update',
 ]);
 
-/** Remove o sufixo " - Veículo" que o Google News acrescenta ao título. */
+/** Removes the " - Outlet" suffix Google News appends to the title. */
 export function cleanTitle(title: string): string {
   return title.replace(/\s+[-–|]\s+[^-–|]{2,40}$/, '').trim();
 }
 
-/** Candidatos a local, do mais provável ao menos provável. */
+const BR_STATES: Record<string, string> = {
+  AC: 'Acre', AL: 'Alagoas', AP: 'Amapá', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceará', DF: 'Distrito Federal',
+  ES: 'Espírito Santo', GO: 'Goiás', MA: 'Maranhão', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais',
+  PA: 'Pará', PB: 'Paraíba', PR: 'Paraná', PE: 'Pernambuco', PI: 'Piauí', RJ: 'Rio de Janeiro', RN: 'Rio Grande do Norte',
+  RS: 'Rio Grande do Sul', RO: 'Rondônia', RR: 'Roraima', SC: 'Santa Catarina', SP: 'São Paulo', SE: 'Sergipe', TO: 'Tocantins',
+};
+const US_STATES: Record<string, string> = {
+  AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado', CT: 'Connecticut',
+  DE: 'Delaware', FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa',
+  KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana', ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan',
+  MN: 'Minnesota', MS: 'Mississippi', MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire',
+  NJ: 'New Jersey', NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma',
+  OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota', TN: 'Tennessee',
+  TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
+  NSW: 'New South Wales, Australia', QLD: 'Queensland, Australia', NWT: 'Northwest Territories, Canada',
+  'B.C': 'British Columbia, Canada', BC: 'British Columbia, Canada', QUE: 'Quebec, Canada', ONT: 'Ontario, Canada', ALTA: 'Alberta, Canada',
+};
+const PORTUGUESE = /\b(avi[aã]o|helic[oó]ptero|aeronave|queda|caiu|cai|mortos?|monomotor|ultraleve)\b/i;
+
+/**
+ * State codes (MG, SC, NSW...) become full names with the country, so the geocoder does not
+ * mistake "MG" for Madagascar or "SC" for the Seychelles. Unknown codes (airports such as
+ * LGA) are dropped.
+ */
+const CITY_CODES: Record<string, string> = {
+  LA: 'Los Angeles, California, USA', NYC: 'New York City, USA', DC: 'Washington, D.C., USA', MIA: 'Miami, Florida, USA',
+  BH: 'Belo Horizonte, Brasil', POA: 'Porto Alegre, Brasil',
+};
+
+/** AP-style state abbreviations ("Lafayette, La."), only used after a comma. */
+const AP_STATES: Record<string, string> = {
+  Ala: 'Alabama', Ariz: 'Arizona', Ark: 'Arkansas', Calif: 'California', Colo: 'Colorado', Conn: 'Connecticut',
+  Del: 'Delaware', Fla: 'Florida', Ga: 'Georgia', Ill: 'Illinois', Ind: 'Indiana', Kan: 'Kansas', Ky: 'Kentucky',
+  La: 'Louisiana', Md: 'Maryland', Mass: 'Massachusetts', Mich: 'Michigan', Minn: 'Minnesota', Miss: 'Mississippi',
+  Mo: 'Missouri', Mont: 'Montana', Neb: 'Nebraska', Nev: 'Nevada', Okla: 'Oklahoma', Ore: 'Oregon', Pa: 'Pennsylvania',
+  Tenn: 'Tennessee', Tex: 'Texas', Va: 'Virginia', Vt: 'Vermont', Wash: 'Washington', Wis: 'Wisconsin', Wyo: 'Wyoming',
+};
+
+function expandAbbreviations(place: string, portuguese: boolean): string | null {
+  const expand = (code: string) => {
+    const key = code.replace(/\.$/, '').toUpperCase();
+    if (portuguese && BR_STATES[key]) return `${BR_STATES[key]}, Brasil`;
+    if (US_STATES[key]) return US_STATES[key]!.includes(',') ? US_STATES[key]! : `${US_STATES[key]}, USA`;
+    return null;
+  };
+  const isCode = (s: string) => /^[A-Z][A-Za-z.]{0,3}$/.test(s) && s.replace(/\./g, '').length <= 4 && s === s.toUpperCase()
+    || /^(Que|Ont|Alta)\.?$/.test(s);
+  // On their own these codes are usually cities ("crash in LA" = Los Angeles), not states.
+  if (CITY_CODES[place]) return CITY_CODES[place]!;
+  if (isCode(place)) return expand(place);
+  const m = place.match(/^(.+),\s*([A-Za-z.]{2,5})$/);
+  const ap = m && AP_STATES[m[2]!.replace(/\.$/, '')];
+  if (m && ap) return `${m[1]}, ${ap}, USA`;
+  if (m && isCode(m[2]!)) {
+    const region = expand(m[2]!);
+    return region ? `${m[1]}, ${region}` : m[1]!;
+  }
+  return place;
+}
+
+/** Location candidates, from most to least likely. */
 export function extractLocations(text: string): string[] {
   const out: string[] = [];
+  const portuguese = PORTUGUESE.test(text);
   for (const m of text.matchAll(LOCATION_RE)) {
-    const place = m[1]!.replace(/[.,;:]+$/, '').trim();
+    const raw = m[1]!.replace(/[.,;:]+$/, '').trim();
+    const place = expandAbbreviations(raw, portuguese);
+    if (!place) continue;
     const first = place.split(/[\s,]/)[0]!.toLowerCase();
     if (NOT_PLACES.has(first) || NOT_PLACES.has(place.toLowerCase())) continue;
     if (!out.includes(place)) out.push(place);
@@ -84,7 +174,7 @@ export function extractLocations(text: string): string[] {
   return out;
 }
 
-/** Ajusta a data quando o texto diz "ontem" / "yesterday". */
+/** Shifts the date when the text says "yesterday" / "ontem". */
 export function extractOccurredAt(text: string, publishedAt: Date | undefined, now: Date): Date {
   const base = publishedAt && publishedAt.getTime() <= now.getTime() ? publishedAt : now;
   if (/\b(yesterday|ontem|hier|gestern)\b/i.test(text)) return new Date(base.getTime() - 24 * 3600_000);

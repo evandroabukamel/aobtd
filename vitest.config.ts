@@ -7,7 +7,7 @@ export default defineConfig({
   },
   test: {
     include: ['{apps,packages}/*/test/**/*.test.ts'],
-    // Testes de integração compartilham o mesmo banco: rodam em sequência.
+    // Integration tests share the same database: they run sequentially.
     fileParallelism: false,
   },
 });

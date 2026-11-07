@@ -2,8 +2,8 @@ import type { AccidentDetail, AccidentMarkers, AccidentStats } from '../../domai
 import type { Filter } from '../../domain/filter';
 
 /**
- * Porta de saída: o que a aplicação precisa saber dos acidentes, sem saber de onde vêm.
- * A implementação HTTP fica em infrastructure; testes podem usar uma em memória.
+ * Outbound port: what the application needs to know about accidents, not where they come from.
+ * The HTTP implementation lives in infrastructure; tests can use an in-memory one.
  */
 export interface AccidentRepository {
   listMarkers(filter: Filter, signal?: AbortSignal): Promise<AccidentMarkers>;

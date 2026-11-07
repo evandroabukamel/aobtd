@@ -2,7 +2,7 @@ import 'leaflet/dist/leaflet.css';
 import { memo, useMemo } from 'react';
 import { AttributionControl, CircleMarker, MapContainer, TileLayer, Tooltip } from 'react-leaflet';
 import { hasKnownFatalities, type AccidentMarker } from '../../../domain/accident';
-import { formatDate } from '../../shared/format';
+import { useI18n } from '../../../i18n/I18nContext';
 
 interface Props {
   markers: AccidentMarker[];
@@ -14,18 +14,16 @@ const COLORS = { stroke: '#7a1d12', selected: '#111', fatal: '#d33a22', nonFatal
 
 const radius = (fatalities: number) => (fatalities > 0 ? Math.min(6 + Math.sqrt(fatalities) * 2, 18) : 6);
 
-const tooltipText = (fatalities: number, occurredAt: number) =>
-  `${formatDate(occurredAt)} · ${hasKnownFatalities(fatalities) ? `${fatalities} vítima(s) fatal(is)` : 'vítimas não informadas'}`;
-
 /**
- * Renderização em canvas (preferCanvas): milhares de CircleMarkers sem criar um nó DOM
- * por marcador, o que mantém o mapa fluido mesmo no filtro de um ano inteiro.
- * Exportado como default para ser carregado com React.lazy (Leaflet num chunk separado).
+ * Canvas rendering (preferCanvas): thousands of CircleMarkers without one DOM node per
+ * marker, which keeps the map smooth even with a whole-year filter.
+ * Default export so it can be loaded with React.lazy (Leaflet in a separate chunk).
  */
 function CrashMap({ markers, selected, onSelect }: Props) {
+  const { t, fmt } = useI18n();
   const layers = useMemo(
     () =>
-      markers.map(([id, lat, lng, fatalities, t]) => (
+      markers.map(([id, lat, lng, fatalities, time]) => (
         <CircleMarker
           key={id}
           center={[lat, lng]}
@@ -39,15 +37,17 @@ function CrashMap({ markers, selected, onSelect }: Props) {
           }}
           eventHandlers={{ click: () => onSelect(id) }}
         >
-          <Tooltip>{tooltipText(fatalities, t)}</Tooltip>
+          <Tooltip>
+            {`${fmt.date(time)} · ${hasKnownFatalities(fatalities) ? t.fatalitiesTooltip(fatalities) : t.fatalitiesUnknown}`}
+          </Tooltip>
         </CircleMarker>
       )),
-    [markers, selected, onSelect],
+    [markers, selected, onSelect, t, fmt],
   );
 
   return (
     <MapContainer center={[10, 0]} zoom={2} minZoom={2} worldCopyJump preferCanvas attributionControl={false} className="map">
-      {/* prefix vazio remove o "Leaflet" antes da atribuição do OpenStreetMap. */}
+      {/* An empty prefix removes the "Leaflet" text before the OpenStreetMap attribution. */}
       <AttributionControl prefix="" />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

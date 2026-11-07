@@ -34,7 +34,29 @@ button { font: inherit; color: inherit; cursor: pointer; }
   grid-template-areas: 'top top' 'map side';
   height: 100%;
 }
-.topbar { grid-area: top; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.topbar {
+  grid-area: top; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--surface);
+  position: relative; z-index: 1000; /* above the Leaflet panes, so the language menu isn't hidden */
+}
+
+.lang { position: relative; flex: none; }
+.lang-button {
+  display: flex; align-items: center; gap: 4px; padding: 4px 6px;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer;
+}
+.lang-button img, .lang-menu img { display: block; border-radius: 2px; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.12); }
+.lang-caret { font-size: 0.7rem; color: var(--muted); }
+.lang-menu {
+  position: absolute; right: 0; top: calc(100% + 4px); margin: 0; padding: 4px; list-style: none; min-width: 200px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 6px 20px rgb(0 0 0 / 0.15);
+}
+.lang-menu button {
+  width: 100%; display: flex; align-items: center; gap: 10px; padding: 6px 8px;
+  border: none; border-radius: 6px; background: none; text-align: left; font-size: 0.9rem; cursor: pointer; color: inherit;
+}
+.lang-menu button:hover { background: var(--bg); }
+.lang-menu button.active { font-weight: 600; }
 .topbar h1 { margin: 0; font-size: 1.15rem; }
 .topbar p { margin: 2px 0 0; color: var(--muted); font-size: 0.85rem; }
 

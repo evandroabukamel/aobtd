@@ -7,7 +7,7 @@ import { last24h, monthRange, type Db } from '@aobtd/core';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { getAccident, getMarkers, getStats } from './queries.js';
 
-/** Os dados mudam no máximo 4 vezes por dia (uma janela de coleta a cada 6h). */
+/** Data changes at most 4 times a day (one collection window every 6h). */
 const CACHE = 'public, max-age=300, stale-while-revalidate=600';
 
 export interface AppOptions {
@@ -44,7 +44,7 @@ export function buildApp({ db, webDist, logger = true }: AppOptions): FastifyIns
         period === '24h'
           ? last24h(now)
           : monthRange(year ?? now.getUTCFullYear(), year === undefined && month === undefined ? now.getUTCMonth() + 1 : month);
-      // "Últimas 24h" é uma janela móvel: cache mais curto.
+      // "Last 24h" is a moving window: shorter cache.
       reply.header('cache-control', period === '24h' ? 'public, max-age=60' : CACHE);
       return getMarkers(db, range);
     },
@@ -72,7 +72,7 @@ export function buildApp({ db, webDist, logger = true }: AppOptions): FastifyIns
     { schema: { params: { type: 'object', properties: { id: { type: 'integer', minimum: 1 } }, required: ['id'] } } },
     async (req, reply) => {
       const accident = await getAccident(db, req.params.id);
-      if (!accident) return reply.code(404).send({ error: 'Acidente não encontrado' });
+      if (!accident) return reply.code(404).send({ error: 'Accident not found' });
       reply.header('cache-control', CACHE);
       return accident;
     },
@@ -87,7 +87,7 @@ export function buildApp({ db, webDist, logger = true }: AppOptions): FastifyIns
   if (dist && existsSync(dist)) {
     app.register(fastifyStatic, {
       root: dist,
-      // Arquivos com hash no nome podem ficar em cache por um ano.
+      // Files with a hash in their name can be cached for a year.
       setHeaders: (res, path) => {
         res.header('cache-control', path.includes('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache');
       },

@@ -1,4 +1,4 @@
-/** Janelas de tempo usadas nos filtros. Tudo em UTC para evitar ambiguidade de fuso. */
+/** Time windows used by the filters. Everything in UTC to avoid time zone ambiguity. */
 
 export interface Range {
   from: Date;
@@ -9,7 +9,7 @@ export function last24h(now = new Date()): Range {
   return { from: new Date(now.getTime() - 24 * 3600_000), to: now };
 }
 
-/** Mês (1-12) de um ano; sem mês, o ano inteiro. */
+/** A month (1-12) of a year; without a month, the whole year. */
 export function monthRange(year: number, month?: number): Range {
   if (month === undefined) {
     return { from: new Date(Date.UTC(year, 0, 1)), to: new Date(Date.UTC(year + 1, 0, 1)) };

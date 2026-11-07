@@ -7,7 +7,7 @@ export default defineConfig({
   build: {
     target: 'es2022',
     rollupOptions: {
-      // Leaflet num chunk separado: o painel aparece antes de o mapa terminar de carregar.
+      // Leaflet in a separate chunk: the panel shows up before the map finishes loading.
       output: { manualChunks: (id) => (/node_modules\/(leaflet|react-leaflet|@react-leaflet)\//.test(id) ? 'map' : undefined) },
     },
   },

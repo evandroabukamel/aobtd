@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * Recuperação histórica de um ano inteiro, fora da agenda diária (ignora o intervalo de 6h).
- * Uso: node dist/backfill.js [ano] [dias-por-janela]
+ * Historical backfill of a whole year, outside the daily schedule (ignores the 6h interval).
+ * Usage: node dist/backfill.js [year] [days-per-window]
  *
- * - Fontes de busca do Google News: a cláusula "when:Nd" é trocada por "after:/before:"
- *   em janelas de poucos dias, porque cada busca devolve no máximo ~100 itens.
- * - Feeds RSS próprios: lidos uma vez, aceitando itens desde 1º de janeiro do ano.
- * - Fontes HTML com proteção anti-robô (ASN) são puladas.
+ * - Google News search sources: the "when:Nd" clause is replaced by "after:/before:"
+ *   in windows of a few days, because each search returns at most ~100 items.
+ * - Native RSS feeds: read once, accepting items since January 1st of the year.
+ * - HTML sources with bot protection (ASN) are skipped.
  *
- * Não usa LLM: a extração é por regras, então não consome tokens.
+ * No LLM: extraction is rule-based, so it spends no tokens.
  */
 import { createPool, migrate, type SourceRow } from '@aobtd/core';
 import { NominatimGeocoder } from './geocode.js';
@@ -20,7 +20,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const WHEN = /\+?when:\d+[dhmy]/;
 
-/** Janelas [início, fim) de `stepDays` dias, de 1º de janeiro até amanhã (ou fim do ano). */
+/** Windows [start, end) of `stepDays` days, from January 1st until tomorrow (or the end of the year). */
 export function windows(year: number, stepDays: number, now: Date): Array<[Date, Date]> {
   const end = Math.min(Date.UTC(year + 1, 0, 1), Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
   const out: Array<[Date, Date]> = [];
@@ -56,13 +56,13 @@ async function main() {
 
   for (const source of (await loadSources(db)).filter((s: SourceRow) => s.enabled)) {
     if (source.parser !== 'rss') {
-      log(`${source.slug}: pulada (fonte HTML, sem histórico acessível)`);
+      log(`${source.slug}: skipped (HTML source, no reachable history)`);
       continue;
     }
     if (source.feed_url.includes('news.google.com') && WHEN.test(source.feed_url)) {
       for (const [from, to] of windows(year, stepDays, now)) {
         add(await scanSource(deps, source, { url: rangedUrl(source.feed_url, from, to), since }));
-        await sleep(1500); // educado com o Google News
+        await sleep(1500); // be polite to Google News
       }
     } else {
       add(await scanSource(deps, source, { url: source.feed_url, since }));
@@ -75,9 +75,9 @@ async function main() {
     [since, new Date(Date.UTC(year + 1, 0, 1))],
   );
   log(
-    `fim: ${totals.requests} requisições, ${totals.seen} itens, ${totals.relevant} relevantes, ` +
-      `${totals.newArticles} notícias novas, ${totals.newAccidents} acidentes novos, ${totals.unlocated} sem local, ` +
-      `${totals.errors} erros | acidentes no banco: ${before} -> ${after} (${inYear.rows[0]!.n} em ${year}) | tokens de LLM: 0`,
+    `done: ${totals.requests} requests, ${totals.seen} items, ${totals.relevant} relevant, ` +
+      `${totals.newArticles} new articles, ${totals.newAccidents} new accidents, ${totals.unlocated} without location, ` +
+      `${totals.errors} errors | accidents in the database: ${before} -> ${after} (${inYear.rows[0]!.n} in ${year}) | LLM tokens: 0`,
   );
   await db.end();
 }

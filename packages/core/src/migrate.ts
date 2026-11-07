@@ -4,7 +4,7 @@ import { createPool, type Db } from './db.js';
 
 const MIGRATIONS_DIR = fileURLToPath(new URL('../migrations/', import.meta.url));
 
-/** Aplica, em ordem e cada uma numa transação, as migrações ainda não aplicadas. */
+/** Applies the pending migrations in order, each in its own transaction. */
 export async function migrate(db: Db, log: (msg: string) => void = console.log): Promise<string[]> {
   await db.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
     name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
@@ -22,7 +22,7 @@ export async function migrate(db: Db, log: (msg: string) => void = console.log):
       await client.query('INSERT INTO schema_migrations (name) VALUES ($1)', [file]);
       await client.query('COMMIT');
       applied.push(file);
-      log(`migração aplicada: ${file}`);
+      log(`migration applied: ${file}`);
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;
@@ -36,7 +36,7 @@ export async function migrate(db: Db, log: (msg: string) => void = console.log):
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const db = createPool();
   migrate(db)
-    .then((applied) => console.log(applied.length ? 'ok' : 'banco já atualizado'))
+    .then((applied) => console.log(applied.length ? 'ok' : 'database already up to date'))
     .catch((err) => {
       console.error(err);
       process.exitCode = 1;

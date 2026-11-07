@@ -1,4 +1,4 @@
-/** Ano e mês (1 a 12) correntes em UTC, o fuso usado pela coleta e pela API. */
+/** Current year and month (1 to 12) in UTC, the time zone used by the collector and the API. */
 export interface YearMonth {
   year: number;
   month: number;

@@ -4,7 +4,7 @@ import {
 } from '@aobtd/core';
 
 export async function getMarkers(db: Db, range: Range): Promise<MarkersResponse> {
-  // Só lê colunas do índice de cobertura accidents_occurred_at_idx.
+  // Only reads columns of the covering index accidents_occurred_at_idx.
   const { rows } = await db.query<{ id: number; lat: number; lng: number; fatalities: number | null; t: number }>(
     `SELECT id, lat, lng, fatalities, extract(epoch FROM occurred_at)::int AS t
        FROM accidents
@@ -23,7 +23,7 @@ export async function getMarkers(db: Db, range: Range): Promise<MarkersResponse>
   return { from: range.from.toISOString(), to: range.to.toISOString(), total: markers.length, markers };
 }
 
-/** Todos os contadores em uma única ida ao banco. */
+/** All counters in a single database round trip. */
 export async function getStats(db: Db, year: number, now = new Date()): Promise<StatsResponse> {
   const h24 = last24h(now);
   const month = currentMonthRange(now);

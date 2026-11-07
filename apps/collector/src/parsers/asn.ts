@@ -14,12 +14,12 @@ export function parseAsnDate(s: string): Date | undefined {
   return new Date(Date.UTC(Number(m[3]), month, Number(m[1]), 12));
 }
 
-/** Danos que caracterizam queda: destruída (w/o) ou dano substancial (sub). */
+/** Damage that means a crash: written off (w/o) or substantial damage (sub). */
 const CRASH_DAMAGE = /^(w\/o|sub|des)/i;
 
 /**
- * Lê a tabela da lista do Wikibase da ASN. As colunas são identificadas pelo cabeçalho,
- * para tolerar mudanças de ordem no layout.
+ * Reads the table of the ASN Wikibase list. Columns are found by their header,
+ * to tolerate changes in the layout order.
  */
 export function parseAsnList(html: string, baseUrl: string): RawItem[] {
   const $ = cheerio.load(html);

@@ -1,4 +1,4 @@
--- Fontes monitoradas. scan_slot define a janela diária (0=00h, 1=06h, 2=12h, 3=18h UTC).
+-- Monitored sources. scan_slot sets the daily window (0=00h, 1=06h, 2=12h, 3=18h UTC).
 CREATE TABLE sources (
   id            SERIAL PRIMARY KEY,
   slug          TEXT NOT NULL UNIQUE,
@@ -17,7 +17,7 @@ CREATE TABLE sources (
   last_error    TEXT
 );
 
--- Um acidente pode ser citado por várias notícias (agrupadas por data e proximidade).
+-- One accident can be cited by many articles (grouped by date and proximity).
 CREATE TABLE accidents (
   id            BIGSERIAL PRIMARY KEY,
   occurred_at   TIMESTAMPTZ NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE accidents (
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   CHECK ((lat IS NULL) = (lng IS NULL))
 );
--- Índice de cobertura: a consulta de marcadores lê só o índice.
+-- Covering index: the markers query reads only the index.
 CREATE INDEX accidents_occurred_at_idx ON accidents (occurred_at) INCLUDE (lat, lng, fatalities);
 
 CREATE TABLE articles (
@@ -57,7 +57,7 @@ CREATE TABLE scan_runs (
 );
 CREATE INDEX scan_runs_source_idx ON scan_runs (source_id, started_at DESC);
 
--- Cache de geocodificação: evita repetir consultas ao Nominatim.
+-- Geocoding cache: avoids repeating Nominatim queries.
 CREATE TABLE geocode_cache (
   query      TEXT PRIMARY KEY,
   lat        DOUBLE PRECISION,

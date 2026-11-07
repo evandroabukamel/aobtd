@@ -3,14 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Servidor MCP que coleta notícias de quedas de aeronaves tripuladas e grava no PostgreSQL",
+  "description": "MCP server that collects news about manned aircraft crashes and stores them in PostgreSQL",
   "bin": { "aobtd-collector": "dist/index.js" },
   "scripts": {
     "build": "tsc -b",
     "dev": "tsx watch src/index.ts --http",
     "start": "node dist/index.js",
     "start:http": "node dist/index.js --http",
-    "backfill": "tsx src/backfill.ts"
+    "backfill": "tsx src/backfill.ts",
+    "repair": "tsx src/repair.ts"
   },
   "dependencies": {
     "@aobtd/core": "*",

@@ -1,4 +1,4 @@
-/** Contratos compartilhados entre coletor, API e frontend. */
+/** Contracts shared between the collector, the API and the frontend. */
 
 /** Marcador compacto: [id, lat, lng, fatalities (-1 = desconhecido), occurredAt (epoch s)]. */
 export type MarkerTuple = [id: number, lat: number, lng: number, fatalities: number, occurredAt: number];
@@ -6,7 +6,7 @@ export type MarkerTuple = [id: number, lat: number, lng: number, fatalities: num
 export interface MarkersResponse {
   from: string;
   to: string;
-  /** Total de acidentes no período, inclusive os que ainda não têm coordenadas. */
+  /** Total accidents in the period, including those without coordinates yet. */
   total: number;
   markers: MarkerTuple[];
 }
@@ -16,9 +16,9 @@ export interface StatsResponse {
   last24h: number;
   currentMonth: number;
   yearTotal: number;
-  /** 12 posições, janeiro a dezembro. */
+  /** 12 slots, January to December. */
   months: number[];
-  /** Anos com pelo menos um acidente, em ordem decrescente. */
+  /** Years with at least one accident, in descending order. */
   years: number[];
 }
 

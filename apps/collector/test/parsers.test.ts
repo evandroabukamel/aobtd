@@ -6,19 +6,19 @@ import { parseFeed } from '../src/parsers/rss.js';
 const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
 
 describe('parsers', () => {
-  it('lê RSS 2.0 e remove HTML da descrição', () => {
+  it('reads RSS 2.0 and strips HTML from the description', () => {
     const items = parseFeed(fixture('feed.rss.xml'));
     expect(items).toHaveLength(6);
     expect(items[0]).toMatchObject({ url: 'https://example.com/a1', summary: 'A Cessna 172 went down shortly after takeoff.' });
     expect(items[0]!.publishedAt?.toISOString()).toBe('2026-11-05T10:00:00.000Z');
   });
 
-  it('lê Atom', () => {
+  it('reads Atom', () => {
     const [item] = parseFeed(fixture('feed.atom.xml'));
     expect(item).toMatchObject({ url: 'https://www.gov.uk/aaib-reports/x', title: 'Helicopter crashed near Inverness' });
   });
 
-  it('lê a lista da ASN e mantém só danos de queda', () => {
+  it('reads the ASN list and keeps only crash damage', () => {
     const items = parseAsnList(fixture('asn.html'), 'https://asn.flightsafety.org/wikibase/dblist.php');
     expect(items.map((i) => i.url)).toEqual([
       'https://asn.flightsafety.org/wikibase/500001',

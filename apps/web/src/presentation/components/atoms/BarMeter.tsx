@@ -1,4 +1,4 @@
-/** Barra horizontal proporcional; `ratio` vai de 0 a 1. */
+/** Proportional horizontal bar; `ratio` goes from 0 to 1. */
 export function BarMeter({ ratio }: { ratio: number }) {
   return (
     <span className="m-bar">
