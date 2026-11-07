@@ -60,3 +60,23 @@ describe('extração', () => {
     );
   });
 });
+
+describe('siglas e vítimas sem sobreviventes', () => {
+  it('expande siglas de estado conforme o idioma', () => {
+    expect(extractLocations('Helicóptero dos bombeiros caiu em MG')[0]).toBe('Minas Gerais, Brasil');
+    expect(extractLocations('Queda de helicóptero em SC')[0]).toBe('Santa Catarina, Brasil');
+    expect(extractLocations('Plane crashes near SC highway')[0]).toBe('South Carolina, USA');
+    expect(extractLocations('Avião cai em Ubatuba, SP')[0]).toBe('Ubatuba, São Paulo, Brasil');
+    expect(extractLocations('Plane crashed at LGA')).toEqual([]);
+  });
+
+  it('usa o número a bordo quando não há sobreviventes', () => {
+    expect(extractFatalities('Plane crashes with 6 aboard, no survivors')).toBe(6);
+    expect(extractFatalities('Avião com quatro pessoas a bordo cai; não houve sobreviventes')).toBe(4);
+    expect(extractFatalities('Queda de helicóptero: foram 6 mortes')).toBe(6);
+    expect(extractFatalities('No one survived the crash')).toBeUndefined();
+    expect(extractFatalities('Helicóptero que caiu e matou piloto em SC')).toBe(1);
+    expect(extractFatalities('Queda de helicóptero que matou cantor Rick e outros 4 em SC')).toBe(5);
+    expect(extractFatalities('Crash killed the pilot and 3 others')).toBe(4);
+  });
+});

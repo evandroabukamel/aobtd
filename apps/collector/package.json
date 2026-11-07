@@ -10,7 +10,8 @@
     "dev": "tsx watch src/index.ts --http",
     "start": "node dist/index.js",
     "start:http": "node dist/index.js --http",
-    "backfill": "tsx src/backfill.ts"
+    "backfill": "tsx src/backfill.ts",
+    "repair": "tsx src/repair.ts"
   },
   "dependencies": {
     "@aobtd/core": "*",
