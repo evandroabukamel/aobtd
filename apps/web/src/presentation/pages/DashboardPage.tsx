@@ -8,9 +8,9 @@ import { siteLinks } from '../../config/siteLinks';
 import { useI18n } from '../../i18n/I18nContext';
 import { StatusMessage } from '../components/atoms/StatusMessage';
 import { MapCaption } from '../components/molecules/MapCaption';
-import { AboutCard } from '../components/organisms/AboutCard';
 import { AccidentPanel } from '../components/organisms/AccidentPanel';
 import { AppHeader } from '../components/organisms/AppHeader';
+import { ProjectSidebar } from '../components/organisms/ProjectSidebar';
 import { CountersPanel } from '../components/organisms/CountersPanel';
 import { DashboardTemplate } from '../components/templates/DashboardTemplate';
 
@@ -33,6 +33,7 @@ export function DashboardPage() {
   return (
     <DashboardTemplate
       header={<AppHeader />}
+      nav={<ProjectSidebar links={siteLinks} status={status.data} reportTarget={reportTarget} />}
       mapBusy={markers.isFetching}
       map={
         <>
@@ -58,7 +59,6 @@ export function DashboardPage() {
               onClose={clearSelection}
             />
           )}
-          <AboutCard links={siteLinks} status={status.data} reportTarget={reportTarget} />
         </>
       }
     />

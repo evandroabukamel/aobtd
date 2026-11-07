@@ -34,7 +34,7 @@ export interface Messages {
   fatalitiesTooltip: (count: number) => string;
   fatalitiesUnknown: string;
   kind: Record<SourceKind, string>;
-  /** About card (bottom of the sidebar). */
+  /** Project menu (left of the page). */
   about: string;
   tagline: string;
   lastUpdate: string;
