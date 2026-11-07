@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  cleanTitle, extractAircraft, extractFatalities, extractLocations, extractOccurredAt, isMannedCrash,
+  cleanTitle, extractAircraft, extractFatalities, extractLocations, extractOccurredAt, isMannedCrash, mentionsEarlierYear,
 } from '../src/extract.js';
 
 describe('filtro de relevância', () => {
@@ -80,5 +80,13 @@ describe('siglas e vítimas sem sobreviventes', () => {
     expect(extractFatalities('Helicóptero que caiu e matou piloto em SC')).toBe(1);
     expect(extractFatalities('Queda de helicóptero que matou cantor Rick e outros 4 em SC')).toBe(5);
     expect(extractFatalities('Crash killed the pilot and 3 others')).toBe(4);
+  });
+
+  it('rejeita falhas de segurança, processos e acidentes antigos', () => {
+    expect(isMannedCrash('Boeing 737 MAX Seats Risk Detaching in Crash: FAA Mandates 453-Jet Inspection')).toBe(false);
+    expect(isMannedCrash('Spouse of pilot killed in UPS plane crash sues Boeing')).toBe(false);
+    expect(isMannedCrash('No closure for pilots one year after fatal UPS plane crash')).toBe(false);
+    expect(mentionsEarlierYear('Final NTSB report on 2024 jet crash', new Date('2026-05-01'))).toBe(true);
+    expect(mentionsEarlierYear('Plane crashes in 2026 airshow', new Date('2026-05-01'))).toBe(false);
   });
 });

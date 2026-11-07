@@ -7,7 +7,7 @@
  * Uso: node dist/repair.js
  */
 import { createPool } from '@aobtd/core';
-import { cleanTitle, extractFatalities, extractLocations } from './extract.js';
+import { cleanTitle, extractFatalities, extractLocations, isOffTopic, mentionsEarlierYear } from './extract.js';
 import { NominatimGeocoder } from './geocode.js';
 
 const log = (msg: string) => process.stderr.write(`[repair] ${msg}\n`);
@@ -16,6 +16,22 @@ const SHORT_CODE = /^[A-Z][A-Za-z.]{0,3}$/;
 async function main() {
   const db = createPool();
   const geocoder = new NominatimGeocoder(db);
+
+  // 1. Remove notícias que as regras atuais rejeitam (falha de segurança, processo, acidente antigo).
+  const articles = await db.query<{ id: number; title: string; published_at: Date | null }>(
+    `SELECT r.id, r.title, r.published_at FROM articles r JOIN sources s ON s.id = r.source_id WHERE s.parser <> 'asn_html'`,
+  );
+  const rejected = articles.rows
+    .filter((r) => {
+      const title = cleanTitle(r.title);
+      // Só o título está gravado: rejeita pelo que o título afirma, sem exigir as palavras positivas.
+      return isOffTopic(title) || mentionsEarlierYear(title, r.published_at ?? undefined);
+    })
+    .map((r) => r.id);
+  if (rejected.length) await db.query('DELETE FROM articles WHERE id = ANY($1)', [rejected]);
+  const orphans = await db.query('DELETE FROM accidents a WHERE NOT EXISTS (SELECT 1 FROM articles r WHERE r.accident_id = a.id)');
+  log(`${rejected.length} notícias rejeitadas, ${orphans.rowCount} acidentes removidos`);
+
   const { rows } = await db.query<{ id: number; location_name: string | null; fatalities: number | null; titles: string[] }>(
     `SELECT a.id, a.location_name, a.fatalities, array_agg(r.title ORDER BY r.id) AS titles
        FROM accidents a JOIN articles r ON r.accident_id = a.id GROUP BY a.id`,

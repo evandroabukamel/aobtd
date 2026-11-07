@@ -1,5 +1,5 @@
 import type { Db, SourceRow } from '@aobtd/core';
-import { cleanTitle, extractAircraft, extractFatalities, extractLocations, extractOccurredAt, isMannedCrash } from './extract.js';
+import { cleanTitle, extractAircraft, extractFatalities, extractLocations, extractOccurredAt, isMannedCrash, mentionsEarlierYear } from './extract.js';
 import type { Geocoder } from './geocode.js';
 import { fetchText, type FetchFn } from './http.js';
 import { parseAsnList } from './parsers/asn.js';
@@ -100,7 +100,7 @@ export async function scanSource(deps: ScanDeps, source: SourceRow, opts: ScanOp
         if (known.has(item.url)) continue;
         const title = cleanTitle(item.title);
         const text = `${title}. ${item.summary ?? ''}`;
-        if (!item.structured && !isMannedCrash(text)) continue;
+        if (!item.structured && (!isMannedCrash(text) || mentionsEarlierYear(title, item.publishedAt))) continue;
         summary.relevant++;
 
         const candidates = item.location ? [item.location, ...extractLocations(item.location)] : extractLocations(text);

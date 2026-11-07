@@ -9,9 +9,27 @@ const AIRCRAFT =
 const CRASH =
   /\b(crash(?:es|ed|-lands?|-landed)?|went down|plunged|caiu|cai\b|queda|acidente a[ée]reo|desastre a[ée]reo|se acidentou|s'est [ée]cras[ée]|[ée]crasement|accident d'avion|abgest[üu]rzt|absturz|st[üu]rzt[e]? ab)/i;
 
-/** Termos que indicam aeronave não tripulada ou assunto fora do escopo. */
+/**
+ * Termos que indicam aeronave não tripulada ou assunto fora do escopo: falhas de segurança,
+ * inspeções e processos judiciais não são quedas.
+ */
 const EXCLUDE =
-  /\b(drones?|uavs?|unmanned|remotely piloted|model (?:aircraft|plane)|aeromodel\w*|vant|missiles?|rockets?|satellites?|foguete|m[íi]sseis?|m[íi]ssil|simulator|simulador|flight sim|stock|market crash|shot down|abatid[oa]s?|abgeschossen|drohnen?)\b/i;
+  /\b(drones?|uavs?|unmanned|remotely piloted|model (?:aircraft|plane)|aeromodel\w*|vant|missiles?|rockets?|satellites?|foguete|m[íi]sseis?|m[íi]ssil|simulator|simulador|flight sim|stock|market crash|shot down|abatid[oa]s?|abgeschossen|drohnen?|mandates?|inspections?|airworthiness|recalls?|lawsuits?|sues|wrongful death|anniversary|years? after|anos? (?:ap[óo]s|depois)|risks? (?:of|detach\w*)|could)\b/i;
+
+/**
+ * Notícia que cita um ano anterior ao da publicação ("Final report on 2024 jet crash"):
+ * é desdobramento de acidente antigo e gravaria a data errada.
+ */
+export function mentionsEarlierYear(text: string, publishedAt: Date | undefined): boolean {
+  if (!publishedAt) return false;
+  const year = publishedAt.getUTCFullYear();
+  return [...text.matchAll(/\b(19[5-9]\d|20\d\d)\b/g)].some((m) => Number(m[1]) < year);
+}
+
+/** Assunto fora do escopo (drone, inspeção, processo...), mesmo quando cita uma queda. */
+export function isOffTopic(text: string): boolean {
+  return EXCLUDE.test(text);
+}
 
 export function isMannedCrash(text: string): boolean {
   return AIRCRAFT.test(text) && CRASH.test(text) && !EXCLUDE.test(text);
