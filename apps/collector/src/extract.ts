@@ -85,7 +85,6 @@ const BR_STATES: Record<string, string> = {
   ES: 'Espírito Santo', GO: 'Goiás', MA: 'Maranhão', MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais',
   PA: 'Pará', PB: 'Paraíba', PR: 'Paraná', PE: 'Pernambuco', PI: 'Piauí', RJ: 'Rio de Janeiro', RN: 'Rio Grande do Norte',
   RS: 'Rio Grande do Sul', RO: 'Rondônia', RR: 'Roraima', SC: 'Santa Catarina', SP: 'São Paulo', SE: 'Sergipe', TO: 'Tocantins',
-  BH: 'Belo Horizonte',
 };
 const US_STATES: Record<string, string> = {
   AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado', CT: 'Connecticut',
@@ -105,6 +104,20 @@ const PORTUGUESE = /\b(avi[aã]o|helic[oó]ptero|aeronave|queda|caiu|cai|mortos?
  * não confundir "MG" com Madagascar ou "SC" com Seicheles. Siglas desconhecidas (aeroportos
  * como LGA) são descartadas.
  */
+const CITY_CODES: Record<string, string> = {
+  LA: 'Los Angeles, California, USA', NYC: 'New York City, USA', DC: 'Washington, D.C., USA', MIA: 'Miami, Florida, USA',
+  BH: 'Belo Horizonte, Brasil', POA: 'Porto Alegre, Brasil',
+};
+
+/** Abreviações de estado no estilo da AP ("Lafayette, La."), só usadas depois de vírgula. */
+const AP_STATES: Record<string, string> = {
+  Ala: 'Alabama', Ariz: 'Arizona', Ark: 'Arkansas', Calif: 'California', Colo: 'Colorado', Conn: 'Connecticut',
+  Del: 'Delaware', Fla: 'Florida', Ga: 'Georgia', Ill: 'Illinois', Ind: 'Indiana', Kan: 'Kansas', Ky: 'Kentucky',
+  La: 'Louisiana', Md: 'Maryland', Mass: 'Massachusetts', Mich: 'Michigan', Minn: 'Minnesota', Miss: 'Mississippi',
+  Mo: 'Missouri', Mont: 'Montana', Neb: 'Nebraska', Nev: 'Nevada', Okla: 'Oklahoma', Ore: 'Oregon', Pa: 'Pennsylvania',
+  Tenn: 'Tennessee', Tex: 'Texas', Va: 'Virginia', Vt: 'Vermont', Wash: 'Washington', Wis: 'Wisconsin', Wyo: 'Wyoming',
+};
+
 function expandAbbreviations(place: string, portuguese: boolean): string | null {
   const expand = (code: string) => {
     const key = code.replace(/\.$/, '').toUpperCase();
@@ -114,8 +127,12 @@ function expandAbbreviations(place: string, portuguese: boolean): string | null 
   };
   const isCode = (s: string) => /^[A-Z][A-Za-z.]{0,3}$/.test(s) && s.replace(/\./g, '').length <= 4 && s === s.toUpperCase()
     || /^(Que|Ont|Alta)\.?$/.test(s);
+  // Sozinhas, estas siglas costumam ser cidades ("crash in LA" = Los Angeles), não estados.
+  if (CITY_CODES[place]) return CITY_CODES[place]!;
   if (isCode(place)) return expand(place);
   const m = place.match(/^(.+),\s*([A-Za-z.]{2,5})$/);
+  const ap = m && AP_STATES[m[2]!.replace(/\.$/, '')];
+  if (m && ap) return `${m[1]}, ${ap}, USA`;
   if (m && isCode(m[2]!)) {
     const region = expand(m[2]!);
     return region ? `${m[1]}, ${region}` : m[1]!;

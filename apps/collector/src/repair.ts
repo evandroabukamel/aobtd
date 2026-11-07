@@ -35,9 +35,14 @@ async function main() {
       }
     }
 
-    if (a.location_name && SHORT_CODE.test(a.location_name) && a.location_name === a.location_name.toUpperCase()) {
+    const candidates = [...new Set(titles.flatMap(extractLocations))].slice(0, 4);
+    const isCode = !!a.location_name && SHORT_CODE.test(a.location_name) && a.location_name === a.location_name.toUpperCase();
+    // Local que veio de uma sigla expandida e que as regras atuais leem de outro jeito (ex.: LA).
+    const isStaleExpansion = !!a.location_name && /, (USA|Brasil|Canada|Australia)$/.test(a.location_name)
+      && candidates.length > 0 && !candidates.includes(a.location_name);
+    if (isCode || isStaleExpansion) {
       let done = false;
-      for (const place of titles.flatMap(extractLocations).slice(0, 4)) {
+      for (const place of candidates) {
         const hit = await geocoder.geocode(place);
         if (!hit) continue;
         await db.query(

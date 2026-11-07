@@ -68,6 +68,8 @@ describe('siglas e vítimas sem sobreviventes', () => {
     expect(extractLocations('Plane crashes near SC highway')[0]).toBe('South Carolina, USA');
     expect(extractLocations('Avião cai em Ubatuba, SP')[0]).toBe('Ubatuba, São Paulo, Brasil');
     expect(extractLocations('Plane crashed at LGA')).toEqual([]);
+    expect(extractLocations('3 dead in news helicopter crash in LA')[0]).toBe('Los Angeles, California, USA');
+    expect(extractLocations('Plane crashes in Lafayette, La.')[0]).toBe('Lafayette, Louisiana, USA');
   });
 
   it('usa o número a bordo quando não há sobreviventes', () => {
