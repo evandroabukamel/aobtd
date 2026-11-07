@@ -1,6 +1,6 @@
 import {
   currentMonthRange, last24h, type AccidentDetailResponse, type Db, type MarkerTuple, type MarkersResponse,
-  type Range, type StatsResponse,
+  type Range, type StatsResponse, type StatusResponse,
 } from '@aobtd/core';
 
 export async function getMarkers(db: Db, range: Range): Promise<MarkersResponse> {
@@ -90,4 +90,20 @@ export async function getAccident(db: Db, id: number): Promise<AccidentDetailRes
     fatalities: r.fatalities,
     articles: r.articles,
   };
+}
+
+/** Last successful collection and number of monitored sources (one indexed lookup per source). */
+export async function getStatus(db: Db): Promise<StatusResponse> {
+  const { rows } = await db.query<{ sources: number; last: Date | null }>(
+    `SELECT count(*)::int AS sources, max(r.finished_at) AS last
+       FROM sources s
+       LEFT JOIN LATERAL (
+         SELECT finished_at FROM scan_runs
+          WHERE source_id = s.id AND finished_at IS NOT NULL AND status <> 'error'
+          ORDER BY started_at DESC
+          LIMIT 1) r ON TRUE
+      WHERE s.enabled`,
+  );
+  const row = rows[0]!;
+  return { sources: Number(row.sources), lastScanAt: row.last ? row.last.toISOString() : null };
 }

@@ -22,6 +22,14 @@ export interface StatsResponse {
   years: number[];
 }
 
+/** Collection health shown on the site: builds trust in the numbers. */
+export interface StatusResponse {
+  /** End of the most recent successful scan of any enabled source (ISO 8601), or null before the first one. */
+  lastScanAt: string | null;
+  /** Number of enabled monitored sources. */
+  sources: number;
+}
+
 export interface ArticleDto {
   title: string;
   url: string;

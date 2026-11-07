@@ -9,6 +9,7 @@ export type {
   MarkersResponse as AccidentMarkers,
   SourceKind,
   StatsResponse as AccidentStats,
+  StatusResponse as CollectionStatus,
 } from '@aobtd/core';
 
 /** In a marker, -1 means the number of fatalities is unknown. */
