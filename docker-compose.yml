@@ -13,7 +13,14 @@ services:
       retries: 10
 
   api:
-    build: .
+    build:
+      context: .
+      # Site links baked into the frontend (values come from the .env next to this file).
+      args:
+        VITE_REPO_URL: ${VITE_REPO_URL:-}
+        VITE_GITHUB_SPONSORS_URL: ${VITE_GITHUB_SPONSORS_URL:-}
+        VITE_KOFI_URL: ${VITE_KOFI_URL:-}
+        VITE_BUYMEACOFFEE_URL: ${VITE_BUYMEACOFFEE_URL:-}
     environment:
       DATABASE_URL: postgres://aobtd:aobtd@db:5432/aobtd
       WEB_DIST: apps/web/dist

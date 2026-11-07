@@ -7,6 +7,11 @@ COPY apps/api/package.json apps/api/
 COPY apps/collector/package.json apps/collector/
 COPY apps/web/package.json apps/web/
 RUN npm ci
+# Site links baked into the frontend build (see .env.example).
+ARG VITE_REPO_URL
+ARG VITE_GITHUB_SPONSORS_URL
+ARG VITE_KOFI_URL
+ARG VITE_BUYMEACOFFEE_URL
 COPY . .
 RUN npm run build && npm prune --omit=dev
 

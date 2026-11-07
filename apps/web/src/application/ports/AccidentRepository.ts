@@ -1,4 +1,4 @@
-import type { AccidentDetail, AccidentMarkers, AccidentStats } from '../../domain/accident';
+import type { AccidentDetail, AccidentMarkers, AccidentStats, CollectionStatus } from '../../domain/accident';
 import type { Filter } from '../../domain/filter';
 
 /**
@@ -9,4 +9,5 @@ export interface AccidentRepository {
   listMarkers(filter: Filter, signal?: AbortSignal): Promise<AccidentMarkers>;
   getStats(year: number, signal?: AbortSignal): Promise<AccidentStats>;
   getAccident(id: number, signal?: AbortSignal): Promise<AccidentDetail>;
+  getStatus(signal?: AbortSignal): Promise<CollectionStatus>;
 }

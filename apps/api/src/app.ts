@@ -5,7 +5,7 @@ import etag from '@fastify/etag';
 import fastifyStatic from '@fastify/static';
 import { last24h, monthRange, type Db } from '@aobtd/core';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { getAccident, getMarkers, getStats } from './queries.js';
+import { getAccident, getMarkers, getStats, getStatus } from './queries.js';
 
 /** Data changes at most 4 times a day (one collection window every 6h). */
 const CACHE = 'public, max-age=300, stale-while-revalidate=600';
@@ -77,6 +77,11 @@ export function buildApp({ db, webDist, logger = true }: AppOptions): FastifyIns
       return accident;
     },
   );
+
+  app.get('/api/status', async (_req, reply) => {
+    reply.header('cache-control', CACHE);
+    return getStatus(db);
+  });
 
   app.get('/api/health', async () => {
     await db.query('SELECT 1');

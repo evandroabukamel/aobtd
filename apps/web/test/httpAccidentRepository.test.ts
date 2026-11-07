@@ -18,6 +18,7 @@ describe('HTTP repository', () => {
     await repo.listMarkers(Filters.last24h());
     await repo.getStats(2026);
     await repo.getAccident(42);
-    expect(calls).toEqual(['/api/accidents?period=24h', '/api/stats?year=2026', '/api/accidents/42']);
+    await repo.getStatus();
+    expect(calls).toEqual(['/api/accidents?period=24h', '/api/stats?year=2026', '/api/accidents/42', '/api/status']);
   });
 });

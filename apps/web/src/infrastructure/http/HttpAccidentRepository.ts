@@ -1,5 +1,5 @@
 import type { AccidentRepository } from '../../application/ports/AccidentRepository';
-import type { AccidentDetail, AccidentMarkers, AccidentStats } from '../../domain/accident';
+import type { AccidentDetail, AccidentMarkers, AccidentStats, CollectionStatus } from '../../domain/accident';
 import type { Filter } from '../../domain/filter';
 import { fetchJson, type HttpGet } from './httpClient';
 
@@ -16,5 +16,6 @@ export function createHttpAccidentRepository(get: HttpGet = fetchJson): Accident
     listMarkers: (filter, signal) => get<AccidentMarkers>(markersPath(filter), signal),
     getStats: (year, signal) => get<AccidentStats>(`/api/stats?year=${year}`, signal),
     getAccident: (id, signal) => get<AccidentDetail>(`/api/accidents/${id}`, signal),
+    getStatus: (signal) => get<CollectionStatus>('/api/status', signal),
   };
 }

@@ -3,6 +3,8 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react()],
+  // VITE_* links are read from the .env at the repository root, like the other settings.
+  envDir: '../..',
   server: { proxy: { '/api': 'http://localhost:3000' } },
   build: {
     target: 'es2022',

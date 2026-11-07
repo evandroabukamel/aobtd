@@ -125,8 +125,20 @@ Exposed tools, all with short replies (one line per item):
 | `GET /api/accidents?period=month[&year=2026][&month=3]` | Current month, one month, or a whole year (no `month`) |
 | `GET /api/stats?year=2026` | Counters: 24h, current month, year total, 12 months and available years |
 | `GET /api/accidents/:id` | Details and list of sources of the accident |
+| `GET /api/status` | End of the last successful scan and number of monitored sources |
 
 Markers come as `[id, lat, lng, fatalities, epoch]` tuples to keep responses small. Responses carry `ETag` and `Cache-Control`.
+
+## Project links on the site
+
+The card at the bottom of the sidebar shows the last collection time, the number of monitored sources, a "report an error" link (opens a pre-filled GitHub issue, naming the open accident) and the repository badge. Donation buttons appear only for the pages you configure in `.env` (they are baked in at build time, https only):
+
+| Variable | Button |
+|---|---|
+| `VITE_REPO_URL` | Repository (default `https://github.com/evandroabukamel/aobtd`) |
+| `VITE_GITHUB_SPONSORS_URL` | GitHub Sponsors |
+| `VITE_KOFI_URL` | Ko-fi |
+| `VITE_BUYMEACOFFEE_URL` | Buy Me a Coffee |
 
 ## Site structure (`apps/web`)
 

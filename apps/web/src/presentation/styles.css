@@ -134,3 +134,40 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .sidebar { border-left: none; border-top: 1px solid var(--border); overflow: visible; }
   .map-caption { left: 50px; right: 12px; }
 }
+
+/* Brand */
+.logo { flex: none; display: block; }
+.logo-pin { fill: var(--accent); }
+.logo-plane { fill: var(--surface); }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+/* About card: pinned to the bottom of the sidebar when there is room left */
+.about {
+  margin-top: auto; display: grid; gap: 10px; padding: 12px;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); font-size: 0.85rem;
+}
+.about-brand { display: flex; align-items: center; gap: 10px; }
+.about-brand > div { display: grid; gap: 4px; justify-items: start; }
+.about-brand strong { font-size: 0.95rem; line-height: 1.25; }
+.about .facts { margin: 0; font-size: 0.85rem; }
+.about .facts dt { white-space: nowrap; }
+.about p { margin: 0; }
+.about-support p { color: var(--muted); }
+.about-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.about-button {
+  padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); text-decoration: none; font-weight: 500; font-size: 0.8rem;
+}
+.about-button:hover { border-color: var(--accent); }
+.about-button.github-sponsors, .about-button.kofi, .about-button.buymeacoffee {
+  border-color: var(--accent); background: var(--accent-soft);
+}
+.about-report { color: var(--muted); }
+.about a:not(.about-button) { color: var(--accent); }
+.about-source {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border);
+  font-size: 0.75rem; text-decoration: none;
+}
+.about a.about-source { color: var(--text); }
+.about-source:hover { border-color: var(--text); }
