@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { AccidentReader } from '../src/app.js';
-import { createApi } from '../src/app.js';
+import { createApi, parseOrigins } from '../src/app.js';
 
 const NOW = new Date('2026-03-15T12:00:00Z');
 
@@ -108,5 +108,41 @@ describe('accidents API', () => {
     const res = await api.request('/api/status');
     expect(res.status).toBe(500);
     expect(await res.text()).not.toContain('password');
+  });
+});
+
+describe('cross-origin access (CORS)', () => {
+  const SITE = 'https://aobtd.example.com';
+  const withOrigins = (origins: string[]) => createApi(fakeReader(), () => NOW, { allowedOrigins: origins });
+
+  it('lets an allowed site read the API', async () => {
+    const res = await withOrigins([SITE]).request('/api/status', { headers: { origin: SITE } });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('access-control-allow-origin')).toBe(SITE);
+    expect(res.headers.get('vary')).toMatch(/origin/i);
+  });
+
+  it('answers the preflight for an allowed site', async () => {
+    const res = await withOrigins([SITE]).request('/api/accidents?period=24h', {
+      method: 'OPTIONS',
+      headers: { origin: SITE, 'access-control-request-method': 'GET' },
+    });
+    expect(res.status).toBe(204);
+    expect(res.headers.get('access-control-allow-origin')).toBe(SITE);
+  });
+
+  it('does not allow other sites', async () => {
+    const res = await withOrigins([SITE]).request('/api/status', { headers: { origin: 'https://evil.example' } });
+    expect(res.headers.get('access-control-allow-origin')).toBeNull();
+  });
+
+  it('sends no CORS headers when no origin is configured', async () => {
+    const res = await createApi(fakeReader(), () => NOW).request('/api/status', { headers: { origin: SITE } });
+    expect(res.headers.get('access-control-allow-origin')).toBeNull();
+  });
+
+  it('reads the comma-separated setting', () => {
+    expect(parseOrigins(' https://a.example/, https://b.example ,')).toEqual(['https://a.example', 'https://b.example']);
+    expect(parseOrigins(undefined)).toEqual([]);
   });
 });

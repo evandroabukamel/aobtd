@@ -3,6 +3,7 @@ import {
   type StatusResponse,
 } from '@aobtd/core';
 import { Hono, type Context } from 'hono';
+import { cors } from 'hono/cors';
 import { etag } from 'hono/etag';
 import { z } from 'zod';
 import { getAccident, getMarkers, getStats, getStatus } from './queries.js';
@@ -48,8 +49,19 @@ function parse<T>(c: Context, schema: z.ZodType<T>, input: unknown): T | Respons
   return result.success ? result.data : c.json({ error: 'Invalid parameters', issues: z.flattenError(result.error).fieldErrors }, 400);
 }
 
-export function createApi(reader: AccidentReader, now: () => Date = () => new Date()): Hono {
+/** Comma-separated origins (ALLOWED_ORIGINS) -> list; blanks dropped. */
+export const parseOrigins = (value: string | undefined): string[] =>
+  (value ?? '').split(',').map((o) => o.trim().replace(/\/$/, '')).filter(Boolean);
+
+export interface ApiOptions {
+  /** Sites on another origin allowed to call the API from the browser (CORS). Empty: same origin only. */
+  allowedOrigins?: string[];
+}
+
+export function createApi(reader: AccidentReader, now: () => Date = () => new Date(), options: ApiOptions = {}): Hono {
   const app = new Hono();
+  const origins = options.allowedOrigins ?? [];
+  if (origins.length > 0) app.use('/api/*', cors({ origin: origins, allowMethods: ['GET', 'HEAD', 'OPTIONS'], maxAge: 86400 }));
   app.use('/api/*', etag());
 
   app.get('/api/accidents', async (c) => {

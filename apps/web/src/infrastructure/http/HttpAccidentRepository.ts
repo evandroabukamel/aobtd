@@ -10,8 +10,12 @@ export function markersPath(f: Filter): string {
   return `/api/accidents?${q}`;
 }
 
-/** Repository implementation over the HTTP API (`apps/api`). */
-export function createHttpAccidentRepository(get: HttpGet = fetchJson): AccidentRepository {
+/**
+ * Repository implementation over the HTTP API (`apps/api`). `baseUrl` is the API origin;
+ * empty means the site's own origin.
+ */
+export function createHttpAccidentRepository(baseUrl = '', fetchFrom: HttpGet = fetchJson): AccidentRepository {
+  const get: HttpGet = (path, signal) => fetchFrom(baseUrl + path, signal);
   return {
     listMarkers: (filter, signal) => get<AccidentMarkers>(markersPath(filter), signal),
     getStats: (year, signal) => get<AccidentStats>(`/api/stats?year=${year}`, signal),

@@ -11,7 +11,11 @@
   // Run next to the database rather than next to the visitor: one query round trip per request.
   "placement": { "mode": "smart" },
   "observability": { "enabled": true },
-  // Reached only through the web Worker's service binding.
-  "workers_dev": false
+  // Public, so the site can call it from another origin (VITE_API_URL in the web build).
+  // A custom domain (Settings -> Domains & Routes) works too; then this can go back to false.
+  "workers_dev": true,
+  // Keep ALLOWED_ORIGINS set in the dashboard: without this, each deploy would erase it.
+  "keep_vars": true
   // Secret (dashboard or `wrangler secret put DATABASE_URL`): DATABASE_URL
+  // Variable (dashboard): ALLOWED_ORIGINS, comma-separated site origins allowed by CORS
 }

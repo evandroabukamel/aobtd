@@ -75,7 +75,7 @@ Each app is its own Worker, with its own `wrangler.jsonc`:
 | Worker | Config | What it runs |
 |---|---|---|
 | `aobtd-web` | `apps/web/wrangler.jsonc` | The built site as static assets (SPA fallback). `/api/*` is handed to `aobtd-api` through a service binding, so the browser talks to one origin. |
-| `aobtd-api` | `apps/api/wrangler.jsonc` | The API (Hono), one database connection per request. Not public on workers.dev: reached through the web Worker. |
+| `aobtd-api` | `apps/api/wrangler.jsonc` | The API (Hono), one database connection per request. Public on workers.dev (or a custom domain); the site calls it at `VITE_API_URL`. |
 | `aobtd-collector` | `apps/collector/wrangler.jsonc` | A cron trigger every 5 minutes that runs the due scans, and `/mcp` behind a bearer token. Needs the Workers Paid plan (feed parsing exceeds the Free plan's CPU limit). |
 
 In **Workers Builds** (each Worker → Settings → Build), point every Worker at its own folder. Running the detection at the repository root fails, because the root is an npm workspace, not an app:
@@ -90,9 +90,9 @@ The API and collector need no build step: Wrangler bundles them from TypeScript,
 
 Settings per Worker:
 
-- `aobtd-api`: secret `DATABASE_URL`.
+- `aobtd-api`: secret `DATABASE_URL`; variable `ALLOWED_ORIGINS` with the site's origin (e.g. `https://aobtd-web.<account>.workers.dev`), comma-separated if more than one. Without it the browser blocks the site's calls.
 - `aobtd-collector`: secret `DATABASE_URL`; secret `MCP_TOKEN` to turn `/mcp` on (clients send `Authorization: Bearer <MCP_TOKEN>`; without it `/mcp` answers 404).
-- `aobtd-web`: optional build variables `VITE_REPO_URL`, `VITE_GITHUB_SPONSORS_URL`, `VITE_KOFI_URL`, `VITE_BUYMEACOFFEE_URL` (see [Project links](#project-links-on-the-site)).
+- `aobtd-web`: build variable `VITE_API_URL` with the API's public origin (e.g. `https://aobtd-api.<account>.workers.dev`, https only, no path). Unset, the site calls `/api` on its own origin, which the service binding forwards to `aobtd-api`. Optional build variables `VITE_REPO_URL`, `VITE_GITHUB_SPONSORS_URL`, `VITE_KOFI_URL`, `VITE_BUYMEACOFFEE_URL` (see [Project links](#project-links-on-the-site)).
 
 Deploy `aobtd-api` before `aobtd-web` the first time: the web Worker's service binding needs the API Worker to exist. Migrations do not run on Workers; apply them with `npm run db:migrate` (with `DATABASE_URL` set) before deploying a change that needs them.
 

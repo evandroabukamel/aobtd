@@ -1,6 +1,8 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
+  /** API origin when it is not this site's own origin, e.g. https://api.example.com. */
+  readonly VITE_API_URL?: string;
   /** Public repository; also used for the "report an error" issue link. */
   readonly VITE_REPO_URL?: string;
   /** Donation pages; a button only shows up when its URL is set. */
