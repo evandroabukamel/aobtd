@@ -21,7 +21,7 @@ interface Props {
 export const CountersPanel = memo(function CountersPanel({ stats, filter, year, now, onFilter, onYear }: Props) {
   const { t, fmt } = useI18n();
   const cur = currentYearMonth(now);
-  const max = Math.max(1, ...(stats?.months ?? [0]));
+  const max = Math.max(1, ...(stats?.months ?? []));
   const currentMonth = Filters.month(cur.year, cur.month);
   const wholeYear = Filters.year(year);
 

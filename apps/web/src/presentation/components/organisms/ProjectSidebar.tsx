@@ -34,7 +34,8 @@ const GitHubMark = () => (
 export const ProjectSidebar = memo(function ProjectSidebar({ links, status, reportTarget }: Props) {
   const { t, fmt } = useI18n();
   const lastUpdate = !status ? t.loading : status.lastScanAt ? fmt.dateTime(status.lastScanAt) : t.noCollectionYet;
-  const pageUrl = typeof location === 'undefined' ? '' : location.origin + location.pathname;
+  // Client-only app: `location` always exists. Query and hash are dropped from the report.
+  const pageUrl = location.origin + location.pathname;
 
   return (
     <nav className="flex min-h-full flex-col gap-4 p-4 text-sm" aria-label={t.about}>

@@ -34,5 +34,6 @@ describe('ProjectSidebar', () => {
     renderWithI18n(<ProjectSidebar links={links} status={undefined} reportTarget={{ id: 7, location: 'Madagascar' }} />);
     const href = screen.getByRole('link', { name: /report it/i }).getAttribute('href')!;
     expect(new URL(href).searchParams.get('title')).toBe('Wrong data: accident #7 (Madagascar)');
+    expect(new URL(href).searchParams.get('body')).toContain(`Page: ${location.origin}${location.pathname}`);
   });
 });

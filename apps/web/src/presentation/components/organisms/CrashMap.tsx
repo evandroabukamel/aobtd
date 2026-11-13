@@ -1,18 +1,15 @@
 import 'leaflet/dist/leaflet.css';
 import { memo, useMemo } from 'react';
 import { AttributionControl, CircleMarker, MapContainer, TileLayer, Tooltip } from 'react-leaflet';
-import { hasKnownFatalities, type AccidentMarker } from '../../../domain/accident';
+import type { AccidentMarker } from '../../../domain/accident';
 import { useI18n } from '../../../i18n/I18nContext';
+import { markerLabel, markerStyle } from './crashMarker';
 
 interface Props {
   markers: AccidentMarker[];
   selected: number | null;
   onSelect: (id: number) => void;
 }
-
-const COLORS = { stroke: '#7a1d12', selected: '#111', fatal: '#d33a22', nonFatal: '#f08a24' } as const;
-
-const radius = (fatalities: number) => (fatalities > 0 ? Math.min(6 + Math.sqrt(fatalities) * 2, 18) : 6);
 
 /**
  * Canvas rendering (preferCanvas): thousands of CircleMarkers without one DOM node per
@@ -24,22 +21,8 @@ function CrashMap({ markers, selected, onSelect }: Props) {
   const layers = useMemo(
     () =>
       markers.map(([id, lat, lng, fatalities, time]) => (
-        <CircleMarker
-          key={id}
-          center={[lat, lng]}
-          radius={radius(fatalities)}
-          pathOptions={{
-            className: 'crash-marker',
-            color: id === selected ? COLORS.selected : COLORS.stroke,
-            weight: id === selected ? 3 : 1,
-            fillColor: fatalities > 0 ? COLORS.fatal : COLORS.nonFatal,
-            fillOpacity: 0.8,
-          }}
-          eventHandlers={{ click: () => onSelect(id) }}
-        >
-          <Tooltip>
-            {`${fmt.date(time)} · ${hasKnownFatalities(fatalities) ? t.fatalitiesTooltip(fatalities) : t.fatalitiesUnknown}`}
-          </Tooltip>
+        <CircleMarker key={id} center={[lat, lng]} {...markerStyle(fatalities, id === selected)} eventHandlers={{ click: () => onSelect(id) }}>
+          <Tooltip>{markerLabel(t, fmt, fatalities, time)}</Tooltip>
         </CircleMarker>
       )),
     [markers, selected, onSelect, t, fmt],

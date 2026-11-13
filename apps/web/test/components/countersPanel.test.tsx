@@ -65,13 +65,23 @@ describe('CountersPanel', () => {
     expect(months).toHaveLength(12);
     expect(screen.getByRole('button', { name: 'February: 7' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'April: 0' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'April: 0' })).toHaveTextContent(/^Apr$/);
     await user.click(screen.getByRole('button', { name: 'February: 7' }));
     expect(onFilter).toHaveBeenCalledWith(Filters.month(2026, 2));
+  });
+
+  it('draws each month bar in proportion to the busiest month', () => {
+    setup();
+    // The bar is decorative (aria-hidden): its fill width is what the user sees.
+    const fill = (name: string) => screen.getByRole('button', { name }).querySelector<HTMLElement>('[aria-hidden] > span')!.style.width;
+    expect(fill('March: 12')).toBe('100%');
+    expect(fill('January: 5')).toBe(`${(5 / 12) * 100}%`);
   });
 
   it('shows a dash while the stats are loading', () => {
     setup(Filters.last24h(), { statsOverride: undefined });
     expect(screen.getByRole('button', { name: /last 24 hours/i })).toHaveTextContent('–');
+    expect(screen.getByRole('combobox', { name: 'Year' })).toHaveTextContent('2026');
   });
 
   it('switches the year from the year picker', async () => {

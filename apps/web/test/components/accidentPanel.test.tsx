@@ -42,6 +42,8 @@ describe('AccidentPanel', () => {
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
     expect(screen.getByText('News agency')).toBeInTheDocument();
     expect(screen.getByText('Official body')).toBeInTheDocument();
+    expect(screen.getByText('Reuters', { exact: false })).toHaveTextContent('Reuters · Mar 3, 2026');
+    expect(screen.getByText('BEA', { exact: false }).textContent).not.toContain('·');
   });
 
   it('closes from the close button', async () => {
