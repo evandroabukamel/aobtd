@@ -1,3 +1,6 @@
+import { useId } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+
 interface Props {
   years: number[];
   value: number;
@@ -6,16 +9,24 @@ interface Props {
 }
 
 export function YearSelect({ years, value, label, onChange }: Props) {
+  const id = useId();
   return (
     <>
-      <label htmlFor="year">{label}</label>
-      <select id="year" value={value} onChange={(e) => onChange(Number(e.target.value))}>
-        {years.map((y) => (
-          <option key={y} value={y}>
-            {y}
-          </option>
-        ))}
-      </select>
+      <label htmlFor={id} className="text-sm text-muted-foreground">
+        {label}
+      </label>
+      <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
+        <SelectTrigger id={id} size="sm" className="w-24 bg-background">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {years.map((y) => (
+            <SelectItem key={y} value={String(y)}>
+              {y}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </>
   );
 }

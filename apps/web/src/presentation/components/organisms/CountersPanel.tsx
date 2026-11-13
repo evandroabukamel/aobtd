@@ -3,10 +3,10 @@ import type { AccidentStats } from '../../../domain/accident';
 import { currentYearMonth, isFutureMonth } from '../../../domain/calendar';
 import { Filters, isSameFilter, type Filter } from '../../../domain/filter';
 import { useI18n } from '../../../i18n/I18nContext';
-import { ToggleButton } from '../atoms/ToggleButton';
 import { MonthBar } from '../molecules/MonthBar';
 import { StatCard } from '../molecules/StatCard';
 import { YearSelect } from '../molecules/YearSelect';
+import { Toggle } from '../ui/toggle';
 
 interface Props {
   stats: AccidentStats | undefined;
@@ -26,30 +26,36 @@ export const CountersPanel = memo(function CountersPanel({ stats, filter, year, 
   const wholeYear = Filters.year(year);
 
   return (
-    <section className="counters" aria-label={t.counters}>
-      <div className="cards">
+    <section className="grid gap-4" aria-label={t.counters}>
+      <div className="grid grid-cols-2 gap-2">
         <StatCard
-          value={fmt.count(stats?.last24h)}
+          value={stats?.last24h}
           label={t.last24h}
           active={isSameFilter(filter, Filters.last24h())}
           onClick={() => onFilter(Filters.last24h())}
         />
         <StatCard
-          value={fmt.count(stats?.currentMonth)}
+          value={stats?.currentMonth}
           label={t.inMonth(fmt.monthsLong[cur.month - 1]!)}
           active={isSameFilter(filter, currentMonth)}
           onClick={() => onFilter(currentMonth)}
         />
       </div>
 
-      <div className="year-row">
+      <div className="flex items-center gap-2">
         <YearSelect years={stats?.years ?? [cur.year]} value={year} onChange={onYear} label={t.year} />
-        <ToggleButton className="chip" active={isSameFilter(filter, wholeYear)} onClick={() => onFilter(wholeYear)}>
+        <Toggle
+          variant="filter"
+          size="sm"
+          pressed={isSameFilter(filter, wholeYear)}
+          onClick={() => onFilter(wholeYear)}
+          className="ml-auto rounded-full border-border bg-background px-3 font-normal"
+        >
           {t.wholeYear}: <strong>{fmt.count(stats?.yearTotal)}</strong>
-        </ToggleButton>
+        </Toggle>
       </div>
 
-      <ol className="months" aria-label={t.accidentsPerMonth(year)}>
+      <ol className="grid gap-0.5" aria-label={t.accidentsPerMonth(year)}>
         {fmt.monthsShort.map((label, i) => {
           const month = i + 1;
           const count = stats?.months[i] ?? 0;

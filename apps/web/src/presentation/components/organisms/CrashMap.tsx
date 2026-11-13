@@ -46,7 +46,7 @@ function CrashMap({ markers, selected, onSelect }: Props) {
   );
 
   return (
-    <MapContainer center={[10, 0]} zoom={2} minZoom={2} worldCopyJump preferCanvas attributionControl={false} className="map">
+    <MapContainer center={[10, 0]} zoom={2} minZoom={2} worldCopyJump preferCanvas attributionControl={false} className="size-full">
       {/* An empty prefix removes the "Leaflet" text before the OpenStreetMap attribution. */}
       <AttributionControl prefix="" />
       <TileLayer

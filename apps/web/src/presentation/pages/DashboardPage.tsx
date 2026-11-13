@@ -6,13 +6,13 @@ import { useStats } from '../../application/queries/useStats';
 import { useDashboardState } from '../../application/useDashboardState';
 import { siteLinks } from '../../config/siteLinks';
 import { useI18n } from '../../i18n/I18nContext';
-import { StatusMessage } from '../components/atoms/StatusMessage';
 import { MapCaption } from '../components/molecules/MapCaption';
 import { AccidentPanel } from '../components/organisms/AccidentPanel';
 import { AppHeader } from '../components/organisms/AppHeader';
 import { ProjectSidebar } from '../components/organisms/ProjectSidebar';
 import { CountersPanel } from '../components/organisms/CountersPanel';
 import { DashboardTemplate } from '../components/templates/DashboardTemplate';
+import { Alert, AlertDescription } from '../components/ui/alert';
 
 // Leaflet is only downloaded when the map mounts (separate chunk).
 const CrashMap = lazy(() => import('../components/organisms/CrashMap'));
@@ -38,13 +38,13 @@ export function DashboardPage() {
       map={
         <>
           <MapCaption title={describeFilter(filter)} detail={markers.data ? t.onMap(markers.data.total) : t.loading} />
-          <Suspense fallback={<div className="map-placeholder">{t.loadingMap}</div>}>
+          <Suspense fallback={<div className="grid size-full place-items-center text-muted-foreground">{t.loadingMap}</div>}>
             <CrashMap markers={markers.data?.markers ?? []} selected={selectedId} onSelect={selectAccident} />
           </Suspense>
           {markers.isError && (
-            <StatusMessage tone="error" as="div">
-              {t.loadError}
-            </StatusMessage>
+            <Alert variant="destructive" className="absolute bottom-4 left-1/2 z-[500] w-auto -translate-x-1/2 shadow-sm">
+              <AlertDescription>{t.loadError}</AlertDescription>
+            </Alert>
           )}
         </>
       }

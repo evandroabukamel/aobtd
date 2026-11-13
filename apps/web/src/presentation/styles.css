@@ -1,171 +1,106 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/*
+ * Design tokens in the shadcn/ui vocabulary, carrying the site's original palette:
+ * warm neutral surfaces and a red accent (primary). Dark mode follows the system
+ * (Tailwind's default `dark:` variant is prefers-color-scheme).
+ */
 :root {
-  --bg: #f6f5f2;
-  --surface: #ffffff;
-  --text: #1d1d1f;
-  --muted: #6b6b70;
+  --radius: 0.625rem;
+  --background: #f6f5f2;
+  --foreground: #1d1d1f;
+  --card: #ffffff;
+  --card-foreground: #1d1d1f;
+  --popover: #ffffff;
+  --popover-foreground: #1d1d1f;
+  --primary: #c2361f;
+  --primary-foreground: #ffffff;
+  /* Background of a pressed filter (card, chip, month). */
+  --primary-soft: #fbe9e5;
+  --secondary: #f6f5f2;
+  --secondary-foreground: #1d1d1f;
+  --muted: #f6f5f2;
+  --muted-foreground: #6b6b70;
+  /* Hover surface for ghost buttons and menu items. */
+  --accent: #efede8;
+  --accent-foreground: #1d1d1f;
+  --destructive: #c2361f;
   --border: #e3e1dc;
-  --accent: #c2361f;
-  --accent-soft: #fbe9e5;
-  --radius: 10px;
+  --input: #e3e1dc;
+  --ring: #c2361f;
+  /* Source kind badges in the accident panel. */
+  --kind-government: #2f6fd1;
+  --kind-database: #2c8a5a;
   color-scheme: light;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
+
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #141416;
-    --surface: #1e1e21;
-    --text: #ececef;
-    --muted: #9a9aa2;
+    --background: #141416;
+    --foreground: #ececef;
+    --card: #1e1e21;
+    --card-foreground: #ececef;
+    --popover: #1e1e21;
+    --popover-foreground: #ececef;
+    --primary: #ff6a4d;
+    --primary-foreground: #141416;
+    --primary-soft: #3a211c;
+    --secondary: #141416;
+    --secondary-foreground: #ececef;
+    --muted: #141416;
+    --muted-foreground: #9a9aa2;
+    --accent: #2a2a2e;
+    --accent-foreground: #ececef;
+    --destructive: #ff6a4d;
     --border: #2e2e33;
-    --accent: #ff6a4d;
-    --accent-soft: #3a211c;
+    --input: #2e2e33;
+    --ring: #ff6a4d;
+    --kind-government: #6ea1f0;
+    --kind-database: #5cc08c;
     color-scheme: dark;
   }
 }
-* { box-sizing: border-box; }
-html, body, #root { height: 100%; margin: 0; }
-body { background: var(--bg); color: var(--text); }
-button { font: inherit; color: inherit; cursor: pointer; }
 
-.layout {
-  display: grid;
-  grid-template-columns: 220px 1fr 340px;
-  grid-template-rows: auto 1fr;
-  grid-template-areas: 'nav top top' 'nav map side';
-  height: 100%;
-}
-.topbar {
-  grid-area: top; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-  padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--surface);
-  position: relative; z-index: 1000; /* above the Leaflet panes, so the language menu isn't hidden */
-}
-
-.lang { position: relative; flex: none; }
-.lang-button {
-  display: flex; align-items: center; gap: 4px; padding: 4px 6px;
-  border: 1px solid var(--border); border-radius: 6px; background: var(--bg); cursor: pointer;
-}
-.lang-button img, .lang-menu img { display: block; border-radius: 2px; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.12); }
-.lang-caret { font-size: 0.7rem; color: var(--muted); }
-.lang-menu {
-  position: absolute; right: 0; top: calc(100% + 4px); margin: 0; padding: 4px; list-style: none; min-width: 200px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 6px 20px rgb(0 0 0 / 0.15);
-}
-.lang-menu button {
-  width: 100%; display: flex; align-items: center; gap: 10px; padding: 6px 8px;
-  border: none; border-radius: 6px; background: none; text-align: left; font-size: 0.9rem; cursor: pointer; color: inherit;
-}
-.lang-menu button:hover { background: var(--bg); }
-.lang-menu button.active { font-weight: 600; }
-.topbar h1 { margin: 0; font-size: 1.15rem; }
-.topbar p { margin: 2px 0 0; color: var(--muted); font-size: 0.85rem; }
-
-.map-area { grid-area: map; position: relative; min-height: 0; }
-.map, .map-placeholder { height: 100%; width: 100%; }
-.map-placeholder { display: grid; place-items: center; color: var(--muted); }
-.map-caption {
-  position: absolute; z-index: 500; top: 12px; left: 56px;
-  display: flex; gap: 10px; align-items: baseline;
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 6px 12px; font-size: 0.9rem; box-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
-}
-.map-caption strong::first-letter { text-transform: uppercase; }
-.map-caption span { color: var(--muted); }
-.map-area[aria-busy='true'] .map-caption::after { content: '…'; color: var(--muted); }
-
-.sidebar {
-  grid-area: side; overflow-y: auto; border-left: 1px solid var(--border);
-  background: var(--surface); padding: 16px; display: flex; flex-direction: column; gap: 16px;
-}
-.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.card {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-  padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); text-align: left;
-}
-.card-value { font-size: 1.9rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-.card-label { color: var(--muted); font-size: 0.85rem; }
-.card.active, .chip.active, .months button.active { border-color: var(--accent); background: var(--accent-soft); }
-
-.year-row { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
-.year-row label { color: var(--muted); font-size: 0.85rem; }
-.year-row select {
-  font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border);
-  background: var(--bg); color: var(--text);
-}
-.chip { margin-left: auto; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); font-size: 0.85rem; }
-
-.months { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 2px; }
-.months button {
-  width: 100%; display: grid; grid-template-columns: 36px 1fr 36px; align-items: center; gap: 8px;
-  padding: 4px 8px; border: 1px solid transparent; border-radius: 6px; background: none; font-size: 0.85rem;
-}
-.months button:hover:not(:disabled) { background: var(--bg); }
-.months button:disabled { opacity: 0.4; cursor: default; }
-.m-label { text-align: left; color: var(--muted); }
-.m-bar { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
-.m-bar span { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.2s; }
-.m-count { text-align: right; font-variant-numeric: tabular-nums; }
-
-.panel { border-top: 1px solid var(--border); padding-top: 12px; }
-.panel-head { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
-.panel h2 { margin: 0; font-size: 1.05rem; }
-.panel h3 { margin: 12px 0 6px; font-size: 0.9rem; color: var(--muted); }
-.close { border: none; background: none; font-size: 1.4rem; line-height: 1; color: var(--muted); }
-.facts { display: grid; gap: 4px; margin: 10px 0 0; font-size: 0.9rem; }
-.facts div { display: flex; justify-content: space-between; gap: 8px; }
-.facts dt { color: var(--muted); }
-.facts dd { margin: 0; text-align: right; }
-.sources { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
-.sources a { color: var(--text); font-weight: 500; text-decoration-color: var(--border); }
-.sources a:hover { text-decoration-color: var(--accent); }
-.meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 3px; font-size: 0.8rem; color: var(--muted); }
-.badge { padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; background: var(--bg); border: 1px solid var(--border); }
-.badge.government { border-color: #2f6fd1; color: #2f6fd1; }
-.badge.database { border-color: #2c8a5a; color: #2c8a5a; }
-.muted { color: var(--muted); }
-.error { color: var(--accent); }
-.map-area > .error {
-  position: absolute; z-index: 500; bottom: 16px; left: 50%; transform: translateX(-50%);
-  background: var(--surface); padding: 8px 12px; border-radius: var(--radius);
+@theme inline {
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-kind-government: var(--kind-government);
+  --color-kind-database: var(--kind-database);
 }
 
-@media (max-width: 1100px) and (min-width: 801px) {
-  .layout { grid-template-columns: 190px 1fr 300px; }
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body,
+  #root {
+    @apply h-full;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
 }
-@media (max-width: 800px) {
-  .layout { grid-template-columns: 1fr; grid-template-rows: auto 55vh auto auto; grid-template-areas: 'top' 'map' 'side' 'nav'; height: auto; }
-  .nav-area { border-right: none; border-top: 1px solid var(--border); overflow: visible; }
-  .sidebar { border-left: none; border-top: 1px solid var(--border); overflow: visible; }
-  .map-caption { left: 50px; right: 12px; }
-}
-
-/* Left menu: full page height, next to the header and the map */
-.logo { flex: none; display: block; }
-.logo-pin { fill: var(--accent); }
-.logo-plane { fill: var(--surface); }
-.nav-area {
-  grid-area: nav; min-height: 0; overflow-y: auto;
-  background: var(--surface); border-right: 1px solid var(--border);
-}
-.project { min-height: 100%; display: flex; flex-direction: column; padding: 16px; font-size: 0.85rem; }
-.project-brand { display: grid; gap: 10px; justify-items: start; padding-bottom: 16px; }
-.project-brand strong { font-size: 1.05rem; line-height: 1.3; }
-.project-section { display: grid; gap: 8px; padding: 14px 0; border-top: 1px solid var(--border); }
-.project p { margin: 0; }
-.project .facts { margin: 0; gap: 8px; font-size: 0.85rem; }
-.project .facts div { display: grid; gap: 1px; }
-.project .facts dd { text-align: left; font-weight: 600; font-variant-numeric: tabular-nums; }
-.project-actions { display: flex; flex-direction: column; gap: 6px; }
-.project-button {
-  padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg);
-  color: var(--text); text-decoration: none; font-weight: 500; font-size: 0.82rem; text-align: center;
-}
-.project-button:hover { border-color: var(--accent); }
-.project-button.donate { border-color: var(--accent); background: var(--accent-soft); }
-.project-link { color: var(--accent); font-weight: 500; }
-.project-footer { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border); }
-.project-source {
-  display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 4px;
-  border: 1px solid var(--border); font-size: 0.75rem; text-decoration: none; color: var(--text);
-}
-.project-source:hover { border-color: var(--text); }

@@ -76,7 +76,10 @@ describe('CountersPanel', () => {
 
   it('switches the year from the year picker', async () => {
     const { user, onYear } = setup();
-    await user.selectOptions(screen.getByLabelText('Year'), '2025');
+    const picker = screen.getByRole('combobox', { name: 'Year' });
+    expect(picker).toHaveTextContent('2026');
+    await user.click(picker);
+    await user.click(screen.getByRole('option', { name: '2025' }));
     expect(onYear).toHaveBeenCalledWith(2025);
   });
 });

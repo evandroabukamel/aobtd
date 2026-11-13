@@ -1,65 +1,49 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { ChevronDownIcon } from 'lucide-react';
 import { useI18n } from '../../../i18n/I18nContext';
-import { findLocale, LOCALES } from '../../../i18n/locales';
+import { findLocale, LOCALES, type LocaleTag } from '../../../i18n/locales';
+import { Button } from '../ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 
-/** Flag button with a dropdown of the supported languages, each shown in its own language. */
+const Flag = ({ src, width }: { src: string; width: number }) => (
+  <img src={src} alt="" width={width} height={(width * 3) / 4} className="block rounded-[2px] ring-1 ring-black/10" />
+);
+
+/**
+ * Flag button with a menu of the supported languages, each shown in its own language.
+ * Radix handles focus, arrow keys, Escape and outside clicks.
+ */
 export function LanguageSwitcher() {
   const { locale, setLocale, t } = useI18n();
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const listId = useId();
   const current = findLocale(locale)!;
 
-  useEffect(() => {
-    if (!open) return;
-    const onPointer = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointer);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('pointerdown', onPointer);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
-
   return (
-    <div className="lang" ref={rootRef}>
-      <button
-        type="button"
-        className="lang-button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-controls={listId}
-        aria-label={`${t.language}: ${current.name}`}
-        title={t.language}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <img src={current.flag} alt="" width={24} height={18} />
-        <span aria-hidden="true" className="lang-caret">▾</span>
-      </button>
-      {open && (
-        <ul id={listId} role="listbox" aria-label={t.language} className="lang-menu">
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="flex-none gap-1 px-1.5" aria-label={`${t.language}: ${current.name}`} title={t.language}>
+          <Flag src={current.flag} width={24} />
+          <ChevronDownIcon className="text-muted-foreground" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-52">
+        <DropdownMenuLabel>{t.language}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuRadioGroup value={locale} onValueChange={(tag) => setLocale(tag as LocaleTag)}>
           {LOCALES.map((l) => (
-            <li key={l.tag} role="option" aria-selected={l.tag === locale} lang={l.tag}>
-              <button
-                type="button"
-                className={l.tag === locale ? 'active' : undefined}
-                onClick={() => {
-                  setLocale(l.tag);
-                  setOpen(false);
-                }}
-              >
-                <img src={l.flag} alt="" width={20} height={15} loading="lazy" />
-                {l.name}
-              </button>
-            </li>
+            <DropdownMenuRadioItem key={l.tag} value={l.tag} lang={l.tag} className="gap-2.5">
+              <Flag src={l.flag} width={20} />
+              {l.name}
+            </DropdownMenuRadioItem>
           ))}
-        </ul>
-      )}
-    </div>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
