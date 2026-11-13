@@ -1,13 +1,18 @@
 import { createPool, migrate, type Db } from '@aobtd/core';
-import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.js';
+import { createApi, readerFor } from '../src/app.js';
 
 const url = process.env.TEST_DATABASE_URL;
 
 describe.skipIf(!url)('API', () => {
   let db: Db;
-  let app: FastifyInstance;
+  let app: ReturnType<typeof createApi>;
+  /** Same shape as the old Fastify inject(), so the assertions below read unchanged. */
+  const inject = async (req: string | { url: string; headers: Record<string, string> }) => {
+    const res = typeof req === 'string' ? await app.request(req) : await app.request(req.url, { headers: req.headers });
+    const text = await res.text();
+    return { statusCode: res.status, headers: Object.fromEntries(res.headers), json: () => JSON.parse(text) };
+  };
   const now = new Date();
   const y = now.getUTCFullYear();
 
@@ -34,15 +39,14 @@ describe.skipIf(!url)('API', () => {
         ((SELECT id FROM sources WHERE slug = 'ntsb'), $2, $2, 'error')`,
       [hoursAgo(3), hoursAgo(1)],
     );
-    app = buildApp({ db, logger: false });
+    app = createApi(readerFor(db));
   });
   afterAll(async () => {
-    await app?.close();
     await db?.end();
   });
 
   it('last 24h markers in compact format', async () => {
-    const res = await app.inject('/api/accidents?period=24h');
+    const res = await inject('/api/accidents?period=24h');
     expect(res.statusCode).toBe(200);
     expect(res.headers['cache-control']).toContain('max-age=60');
     const body = res.json();
@@ -51,41 +55,41 @@ describe.skipIf(!url)('API', () => {
   });
 
   it('markers of a previous year', async () => {
-    const body = (await app.inject(`/api/accidents?period=month&year=${y - 1}`)).json();
+    const body = (await inject(`/api/accidents?period=month&year=${y - 1}`)).json();
     expect(body.markers.map((m: number[]) => m[0])).toEqual([3]);
-    const june = (await app.inject(`/api/accidents?period=month&year=${y - 1}&month=6`)).json();
+    const june = (await inject(`/api/accidents?period=month&year=${y - 1}&month=6`)).json();
     expect(june.total).toBe(1);
   });
 
   it('counters and available years', async () => {
-    const body = (await app.inject(`/api/stats?year=${y - 1}`)).json();
+    const body = (await inject(`/api/stats?year=${y - 1}`)).json();
     expect(body).toMatchObject({ last24h: 1, yearTotal: 1, years: [y, y - 1] });
     expect(body.months[5]).toBe(1);
     expect(body.months).toHaveLength(12);
   });
 
   it('detail with the list of sources', async () => {
-    const body = (await app.inject('/api/accidents/1')).json();
+    const body = (await inject('/api/accidents/1')).json();
     expect(body.location).toBe('Austin');
     expect(body.articles).toHaveLength(2);
     expect(body.articles[0]).toMatchObject({ source: 'NTSB', sourceKind: 'government' });
   });
 
   it('collection status ignores failed scans', async () => {
-    const body = (await app.inject('/api/status')).json();
+    const body = (await inject('/api/status')).json();
     const { rows } = await db.query<{ n: number }>('SELECT count(*)::int AS n FROM sources WHERE enabled');
     expect(body.sources).toBe(rows[0]!.n);
     expect(new Date(body.lastScanAt).getTime()).toBeCloseTo(now.getTime() - 3 * 3600_000, -4);
   });
 
   it('validates parameters and 404', async () => {
-    expect((await app.inject('/api/accidents?period=week')).statusCode).toBe(400);
-    expect((await app.inject('/api/accidents/999')).statusCode).toBe(404);
+    expect((await inject('/api/accidents?period=week')).statusCode).toBe(400);
+    expect((await inject('/api/accidents/999')).statusCode).toBe(404);
   });
 
   it('ETag allows 304', async () => {
-    const first = await app.inject('/api/accidents/1');
-    const second = await app.inject({ url: '/api/accidents/1', headers: { 'if-none-match': first.headers.etag as string } });
+    const first = await inject('/api/accidents/1');
+    const second = await inject({ url: '/api/accidents/1', headers: { 'if-none-match': first.headers.etag as string } });
     expect(second.statusCode).toBe(304);
   });
 });

@@ -7,3 +7,6 @@ coverage/
 .vitest/
 reports/
 .stryker-tmp/
+.dev.vars*
+.wrangler/
+.wrangler-dry/
