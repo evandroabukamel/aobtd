@@ -14,6 +14,6 @@
   // Parsing feeds and pages needs more than the default CPU budget (Workers Paid plan).
   "limits": { "cpu_ms": 120000 },
   "placement": { "mode": "smart" },
-  "observability": { "enabled": true }
+  "observability": { "enabled": false }
   // Secrets (dashboard or `wrangler secret put`): DATABASE_URL, and MCP_TOKEN to enable /mcp.
 }
