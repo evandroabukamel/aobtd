@@ -1,5 +1,5 @@
 import {
-  currentMonthRange, last24h, type AccidentDetailResponse, type Db, type MarkerTuple, type MarkersResponse,
+  currentMonthRange, last24h, monthRange, type AccidentDetailResponse, type Db, type MarkerTuple, type MarkersResponse,
   type Range, type StatsResponse, type StatusResponse,
 } from '@aobtd/core';
 
@@ -23,10 +23,15 @@ export async function getMarkers(db: Db, range: Range): Promise<MarkersResponse>
   return { from: range.from.toISOString(), to: range.to.toISOString(), total: markers.length, markers };
 }
 
-/** All counters in a single database round trip. */
+/**
+ * All counters in a single database round trip. Every time window is computed here and
+ * passed as a parameter: PostgreSQL-compatible engines (TiDB Cloud) lack date builders
+ * such as make_timestamptz, and the year window must match the map's (monthRange).
+ */
 export async function getStats(db: Db, year: number, now = new Date()): Promise<StatsResponse> {
   const h24 = last24h(now);
   const month = currentMonthRange(now);
+  const wholeYear = monthRange(year);
   const [counts, years] = await Promise.all([
     db.query<{ last24h: number; current_month: number; months: number[] }>(
       `SELECT
@@ -37,13 +42,12 @@ export async function getStats(db: Db, year: number, now = new Date()): Promise<
             LEFT JOIN (
               SELECT extract(month FROM occurred_at AT TIME ZONE 'UTC')::int AS mm, count(*)::int AS c
                 FROM accidents
-               WHERE occurred_at >= make_timestamptz($5::int, 1, 1, 0, 0, 0, 'UTC')
-                 AND occurred_at <  make_timestamptz($5::int + 1, 1, 1, 0, 0, 0, 'UTC')
+               WHERE occurred_at >= $5 AND occurred_at < $6
                  AND lat IS NOT NULL
                GROUP BY 1) x ON x.mm = m) AS months
        FROM accidents
       WHERE occurred_at >= LEAST($1::timestamptz, $3::timestamptz) AND lat IS NOT NULL`,
-      [h24.from, h24.to, month.from, month.to, year],
+      [h24.from, h24.to, month.from, month.to, wholeYear.from, wholeYear.to],
     ),
     db.query<{ y: number }>(
       `SELECT DISTINCT extract(year FROM occurred_at AT TIME ZONE 'UTC')::int AS y FROM accidents ORDER BY y DESC`,
