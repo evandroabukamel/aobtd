@@ -1,0 +1,18 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  // Must match the Worker's name in the Cloudflare dashboard (Workers Builds checks it).
+  "name": "aobtd-web",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    // Output of `npm run build` (vite build).
+    "directory": "./dist",
+    // Unknown paths get index.html: the app is a single page.
+    "not_found_handling": "single-page-application",
+    // Only API calls run the Worker; everything else is a static file.
+    "run_worker_first": ["/api/*"]
+  },
+  // The API Worker, reached in-process: the browser only ever talks to this origin.
+  "services": [{ "binding": "API", "service": "aobtd-api" }],
+  "observability": { "enabled": true }
+}
