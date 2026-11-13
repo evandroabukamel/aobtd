@@ -2,7 +2,7 @@
 export function Logo({ size = 32 }: { size?: number }) {
   return (
     <svg className="block flex-none" width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path className="fill-primary" d="M12 1.5C7.3 1.5 3.5 5.1 3.5 9.7 3.5 15.6 12 22.5 12 22.5s8.5-6.9 8.5-12.8c0-4.6-3.8-8.2-8.5-8.2z" />
+      <path className="fill-highlight" d="M12 1.5C7.3 1.5 3.5 5.1 3.5 9.7 3.5 15.6 12 22.5 12 22.5s8.5-6.9 8.5-12.8c0-4.6-3.8-8.2-8.5-8.2z" />
       <path
         className="fill-card"
         transform="translate(6.6 4.2) scale(0.45)"

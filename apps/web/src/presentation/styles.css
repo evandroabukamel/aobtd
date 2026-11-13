@@ -1,65 +1,48 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+/* The site is always light: `dark:` utilities in shadcn components only apply under a `.dark` class, which is never set. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
- * Design tokens in the shadcn/ui vocabulary, carrying the site's original palette:
- * warm neutral surfaces and a red accent (primary). Dark mode follows the system
- * (Tailwind's default `dark:` variant is prefers-color-scheme).
+ * Design tokens in the shadcn/ui vocabulary. Aviation palette, always light: sky and cloud
+ * surfaces, jet-black text, deep corporate blue for actions, and one warm highlight used
+ * sparingly on the brand mark. Contrast is checked by test/palette.test.ts.
  */
 :root {
   --radius: 0.625rem;
-  --background: #f6f5f2;
-  --foreground: #1d1d1f;
+  /* Cloud white with a hint of sky */
+  --background: #f4f9fc;
+  --foreground: #101820;
   --card: #ffffff;
-  --card-foreground: #1d1d1f;
+  --card-foreground: #101820;
   --popover: #ffffff;
-  --popover-foreground: #1d1d1f;
-  --primary: #c2361f;
+  --popover-foreground: #101820;
+  /* Deep corporate blue: buttons, links, month bars, pressed filters */
+  --primary: #003366;
   --primary-foreground: #ffffff;
-  /* Background of a pressed filter (card, chip, month). */
-  --primary-soft: #fbe9e5;
-  --secondary: #f6f5f2;
-  --secondary-foreground: #1d1d1f;
-  --muted: #f6f5f2;
-  --muted-foreground: #6b6b70;
-  /* Hover surface for ghost buttons and menu items. */
-  --accent: #efede8;
-  --accent-foreground: #1d1d1f;
-  --destructive: #c2361f;
-  --border: #e3e1dc;
-  --input: #e3e1dc;
-  --ring: #c2361f;
-  /* Source kind badges in the accident panel. */
-  --kind-government: #2f6fd1;
-  --kind-database: #2c8a5a;
+  /* Sky tint behind a pressed filter (card, chip, month) */
+  --primary-soft: #e1f2fa;
+  --secondary: #f4f9fc;
+  --secondary-foreground: #101820;
+  /* Track of the month bars */
+  --muted: #e3eef5;
+  --muted-foreground: #4b5563;
+  /* Hover surface for ghost buttons and menu items */
+  --accent: #eaf5fb;
+  --accent-foreground: #101820;
+  --destructive: #c81e1e;
+  --border: #d3e2ec;
+  --input: #d3e2ec;
+  --ring: #1e3a8a;
+  /* Sky blue: the line under the header */
+  --sky: #87ceeb;
+  /* Warm highlight, used sparingly: the brand mark */
+  --highlight: #e85d04;
+  /* Source kind badges in the accident panel */
+  --kind-government: #1e3a8a;
+  --kind-database: #157347;
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #141416;
-    --foreground: #ececef;
-    --card: #1e1e21;
-    --card-foreground: #ececef;
-    --popover: #1e1e21;
-    --popover-foreground: #ececef;
-    --primary: #ff6a4d;
-    --primary-foreground: #141416;
-    --primary-soft: #3a211c;
-    --secondary: #141416;
-    --secondary-foreground: #ececef;
-    --muted: #141416;
-    --muted-foreground: #9a9aa2;
-    --accent: #2a2a2e;
-    --accent-foreground: #ececef;
-    --destructive: #ff6a4d;
-    --border: #2e2e33;
-    --input: #2e2e33;
-    --ring: #ff6a4d;
-    --kind-government: #6ea1f0;
-    --kind-database: #5cc08c;
-    color-scheme: dark;
-  }
 }
 
 @theme inline {
@@ -87,6 +70,8 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-sky: var(--sky);
+  --color-highlight: var(--highlight);
   --color-kind-government: var(--kind-government);
   --color-kind-database: var(--kind-database);
 }
