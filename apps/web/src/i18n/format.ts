@@ -5,6 +5,8 @@
  */
 export interface Formatters {
   date: (value: string | number) => string;
+  /** Date and time in UTC, e.g. "11/7/26, 6:00 AM UTC". */
+  dateTime: (iso: string) => string;
   count: (n: number | undefined) => string;
   /** Short month names, January first. */
   monthsShort: string[];
@@ -20,11 +22,13 @@ const monthNames = (tag: string, month: 'short' | 'long') => {
 
 export function createFormatters(tag: string): Formatters {
   const dateFmt = new Intl.DateTimeFormat(tag, { dateStyle: 'medium', timeZone: 'UTC' });
+  const dateTimeFmt = new Intl.DateTimeFormat(tag, { dateStyle: 'short', timeStyle: 'short', timeZone: 'UTC' });
   const monthYearFmt = new Intl.DateTimeFormat(tag, { month: 'long', year: 'numeric', timeZone: 'UTC' });
   const numberFmt = new Intl.NumberFormat(tag);
   return {
     // Accepts ISO 8601 or epoch seconds (the marker format).
     date: (value) => dateFmt.format(typeof value === 'number' ? value * 1000 : new Date(value)),
+    dateTime: (iso) => `${dateTimeFmt.format(new Date(iso))} UTC`,
     // '–' while the number has not loaded yet.
     count: (n) => (n === undefined ? '–' : numberFmt.format(n)),
     monthsShort: monthNames(tag, 'short'),

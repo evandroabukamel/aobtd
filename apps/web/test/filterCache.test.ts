@@ -12,6 +12,7 @@ function fakeRepo() {
     listMarkers: vi.fn(async () => ({ from: '', to: '', total: 0, markers: [] })),
     getStats: vi.fn(async (year: number) => ({ year, last24h: 0, currentMonth: 0, yearTotal: 0, months: [], years: [] })),
     getAccident: vi.fn(),
+    getStatus: vi.fn(),
   } satisfies AccidentRepository;
 }
 

@@ -13,9 +13,16 @@ services:
       retries: 10
 
   api:
-    build: .
+    build:
+      context: .
+      # Site links baked into the frontend (values come from the .env next to this file).
+      args:
+        VITE_REPO_URL: ${VITE_REPO_URL:-}
+        VITE_GITHUB_SPONSORS_URL: ${VITE_GITHUB_SPONSORS_URL:-}
+        VITE_KOFI_URL: ${VITE_KOFI_URL:-}
+        VITE_BUYMEACOFFEE_URL: ${VITE_BUYMEACOFFEE_URL:-}
     environment:
-      DATABASE_URL: postgres://aobtd:aobtd@db:5432/aobtd
+      DATABASE_URL: ${DATABASE_URL:-}
       WEB_DIST: apps/web/dist
     ports: ['3000:3000']
     depends_on: { db: { condition: service_healthy } }
@@ -24,7 +31,7 @@ services:
     build: .
     command: ['node', 'apps/collector/dist/index.js', '--http']
     environment:
-      DATABASE_URL: postgres://aobtd:aobtd@db:5432/aobtd
+      DATABASE_URL: ${DATABASE_URL:-}
       COLLECTOR_SCHEDULER: 'on'
       GEOCODER_USER_AGENT: ${GEOCODER_USER_AGENT:-aobtd-crash-monitor/1.0}
     ports: ['3333:3333']

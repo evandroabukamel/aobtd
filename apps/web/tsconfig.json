@@ -10,7 +10,7 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "types": ["vite/client"],
-    "paths": { "@aobtd/core": ["../../packages/core/src/types.ts"] }
+    "paths": { "@aobtd/core": ["../../packages/core/src/types.ts"], "@/*": ["./src/*"] }
   },
   "include": ["src"]
 }

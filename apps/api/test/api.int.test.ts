@@ -28,6 +28,12 @@ describe.skipIf(!url)('API', () => {
         (1, (SELECT id FROM sources WHERE slug = 'reuters'), 'https://e.com/1', 'Plane crashes near Austin', now()),
         (1, (SELECT id FROM sources WHERE slug = 'ntsb'), 'https://e.com/2', 'NTSB investigates Austin crash', now())`,
     );
+    await db.query(
+      `INSERT INTO scan_runs (source_id, started_at, finished_at, status) VALUES
+        ((SELECT id FROM sources WHERE slug = 'bbc'), $1, $1, 'ok'),
+        ((SELECT id FROM sources WHERE slug = 'ntsb'), $2, $2, 'error')`,
+      [hoursAgo(3), hoursAgo(1)],
+    );
     app = buildApp({ db, logger: false });
   });
   afterAll(async () => {
@@ -63,6 +69,13 @@ describe.skipIf(!url)('API', () => {
     expect(body.location).toBe('Austin');
     expect(body.articles).toHaveLength(2);
     expect(body.articles[0]).toMatchObject({ source: 'NTSB', sourceKind: 'government' });
+  });
+
+  it('collection status ignores failed scans', async () => {
+    const body = (await app.inject('/api/status')).json();
+    const { rows } = await db.query<{ n: number }>('SELECT count(*)::int AS n FROM sources WHERE enabled');
+    expect(body.sources).toBe(rows[0]!.n);
+    expect(new Date(body.lastScanAt).getTime()).toBeCloseTo(now.getTime() - 3 * 3600_000, -4);
   });
 
   it('validates parameters and 404', async () => {

@@ -1,6 +1,6 @@
 import {
-  currentMonthRange, last24h, type AccidentDetailResponse, type Db, type MarkerTuple, type MarkersResponse,
-  type Range, type StatsResponse,
+  currentMonthRange, last24h, monthRange, type AccidentDetailResponse, type Db, type MarkerTuple, type MarkersResponse,
+  type Range, type StatsResponse, type StatusResponse,
 } from '@aobtd/core';
 
 export async function getMarkers(db: Db, range: Range): Promise<MarkersResponse> {
@@ -23,10 +23,15 @@ export async function getMarkers(db: Db, range: Range): Promise<MarkersResponse>
   return { from: range.from.toISOString(), to: range.to.toISOString(), total: markers.length, markers };
 }
 
-/** All counters in a single database round trip. */
+/**
+ * All counters in a single database round trip. Every time window is computed here and
+ * passed as a parameter: PostgreSQL-compatible engines (TiDB Cloud) lack date builders
+ * such as make_timestamptz, and the year window must match the map's (monthRange).
+ */
 export async function getStats(db: Db, year: number, now = new Date()): Promise<StatsResponse> {
   const h24 = last24h(now);
   const month = currentMonthRange(now);
+  const wholeYear = monthRange(year);
   const [counts, years] = await Promise.all([
     db.query<{ last24h: number; current_month: number; months: number[] }>(
       `SELECT
@@ -37,13 +42,12 @@ export async function getStats(db: Db, year: number, now = new Date()): Promise<
             LEFT JOIN (
               SELECT extract(month FROM occurred_at AT TIME ZONE 'UTC')::int AS mm, count(*)::int AS c
                 FROM accidents
-               WHERE occurred_at >= make_timestamptz($5::int, 1, 1, 0, 0, 0, 'UTC')
-                 AND occurred_at <  make_timestamptz($5::int + 1, 1, 1, 0, 0, 0, 'UTC')
+               WHERE occurred_at >= $5 AND occurred_at < $6
                  AND lat IS NOT NULL
                GROUP BY 1) x ON x.mm = m) AS months
        FROM accidents
       WHERE occurred_at >= LEAST($1::timestamptz, $3::timestamptz) AND lat IS NOT NULL`,
-      [h24.from, h24.to, month.from, month.to, year],
+      [h24.from, h24.to, month.from, month.to, wholeYear.from, wholeYear.to],
     ),
     db.query<{ y: number }>(
       `SELECT DISTINCT extract(year FROM occurred_at AT TIME ZONE 'UTC')::int AS y FROM accidents ORDER BY y DESC`,
@@ -68,15 +72,17 @@ export async function getAccident(db: Db, id: number): Promise<AccidentDetailRes
     id: number; occurred_at: Date; location_name: string | null; country: string | null; aircraft: string | null;
     fatalities: number | null; articles: AccidentDetailResponse['articles'];
   }>(
+    // Articles in a correlated subquery, not LEFT JOIN + GROUP BY a.id: TiDB (PostgreSQL-compatible)
+    // does not treat the other columns of `a` as functionally dependent on its primary key.
     `SELECT a.id, a.occurred_at, a.location_name, a.country, a.aircraft, a.fatalities,
-            coalesce(json_agg(json_build_object(
-              'title', r.title, 'url', r.url, 'source', s.name, 'sourceKind', s.kind,
-              'publishedAt', r.published_at) ORDER BY (s.kind = 'agency'), r.published_at) FILTER (WHERE r.id IS NOT NULL), '[]') AS articles
+            coalesce((SELECT json_agg(json_build_object(
+                        'title', r.title, 'url', r.url, 'source', s.name, 'sourceKind', s.kind,
+                        'publishedAt', r.published_at) ORDER BY (s.kind = 'agency'), r.published_at)
+                        FROM articles r
+                        JOIN sources s ON s.id = r.source_id
+                       WHERE r.accident_id = a.id), '[]') AS articles
        FROM accidents a
-       LEFT JOIN articles r ON r.accident_id = a.id
-       LEFT JOIN sources s ON s.id = r.source_id
-      WHERE a.id = $1
-      GROUP BY a.id`,
+      WHERE a.id = $1`,
     [id],
   );
   const r = rows[0];
@@ -90,4 +96,20 @@ export async function getAccident(db: Db, id: number): Promise<AccidentDetailRes
     fatalities: r.fatalities,
     articles: r.articles,
   };
+}
+
+/** Last successful collection and number of monitored sources (one indexed lookup per source). */
+export async function getStatus(db: Db): Promise<StatusResponse> {
+  const { rows } = await db.query<{ sources: number; last: Date | null }>(
+    `SELECT count(*)::int AS sources, max(r.finished_at) AS last
+       FROM sources s
+       LEFT JOIN LATERAL (
+         SELECT finished_at FROM scan_runs
+          WHERE source_id = s.id AND finished_at IS NOT NULL AND status <> 'error'
+          ORDER BY started_at DESC
+          LIMIT 1) r ON TRUE
+      WHERE s.enabled`,
+  );
+  const row = rows[0]!;
+  return { sources: Number(row.sources), lastScanAt: row.last ? row.last.toISOString() : null };
 }

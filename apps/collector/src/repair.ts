@@ -35,7 +35,8 @@ async function main() {
 
   const { rows } = await db.query<{ id: number; location_name: string | null; fatalities: number | null; titles: string[] }>(
     `SELECT a.id, a.location_name, a.fatalities, array_agg(r.title ORDER BY r.id) AS titles
-       FROM accidents a JOIN articles r ON r.accident_id = a.id GROUP BY a.id`,
+       FROM accidents a JOIN articles r ON r.accident_id = a.id
+      GROUP BY a.id, a.location_name, a.fatalities -- TiDB: grouping by the PK alone is rejected`,
   );
   let relocated = 0;
   let unresolved = 0;
