@@ -72,15 +72,17 @@ export async function getAccident(db: Db, id: number): Promise<AccidentDetailRes
     id: number; occurred_at: Date; location_name: string | null; country: string | null; aircraft: string | null;
     fatalities: number | null; articles: AccidentDetailResponse['articles'];
   }>(
+    // Articles in a correlated subquery, not LEFT JOIN + GROUP BY a.id: TiDB (PostgreSQL-compatible)
+    // does not treat the other columns of `a` as functionally dependent on its primary key.
     `SELECT a.id, a.occurred_at, a.location_name, a.country, a.aircraft, a.fatalities,
-            coalesce(json_agg(json_build_object(
-              'title', r.title, 'url', r.url, 'source', s.name, 'sourceKind', s.kind,
-              'publishedAt', r.published_at) ORDER BY (s.kind = 'agency'), r.published_at) FILTER (WHERE r.id IS NOT NULL), '[]') AS articles
+            coalesce((SELECT json_agg(json_build_object(
+                        'title', r.title, 'url', r.url, 'source', s.name, 'sourceKind', s.kind,
+                        'publishedAt', r.published_at) ORDER BY (s.kind = 'agency'), r.published_at)
+                        FROM articles r
+                        JOIN sources s ON s.id = r.source_id
+                       WHERE r.accident_id = a.id), '[]') AS articles
        FROM accidents a
-       LEFT JOIN articles r ON r.accident_id = a.id
-       LEFT JOIN sources s ON s.id = r.source_id
-      WHERE a.id = $1
-      GROUP BY a.id`,
+      WHERE a.id = $1`,
     [id],
   );
   const r = rows[0];

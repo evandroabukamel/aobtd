@@ -88,7 +88,8 @@ export function createMcpServer(deps: ScanDeps): McpServer {
         `SELECT a.id, a.occurred_at, a.location_name, a.fatalities, a.aircraft, count(r.id) AS n
            FROM accidents a JOIN articles r ON r.accident_id = a.id
           WHERE a.occurred_at >= $1 AND a.occurred_at < $2
-          GROUP BY a.id ORDER BY a.occurred_at DESC LIMIT $3`,
+          GROUP BY a.id, a.occurred_at, a.location_name, a.fatalities, a.aircraft -- TiDB: grouping by the PK alone is rejected
+          ORDER BY a.occurred_at DESC LIMIT $3`,
         [range.from, range.to, limit ?? 20],
       );
       if (!rows.length) return text('No accidents in the period.');
