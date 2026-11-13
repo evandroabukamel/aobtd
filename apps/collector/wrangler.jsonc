@@ -1,0 +1,19 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  // Must match the Worker's name in the Cloudflare dashboard (Workers Builds checks it).
+  "name": "aobtd-collector",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-11-01",
+  // pg opens TCP/TLS sockets through the Node compatibility layer.
+  "compatibility_flags": ["nodejs_compat"],
+  // Bundle the shared package from source, so no separate build step is needed.
+  "alias": { "@aobtd/core": "../../packages/core/src/index.ts" },
+  // Same cadence as the Node scheduler: every 5 minutes, check whether a daily window has opened
+  // (00h, 06h, 12h, 18h UTC). The database decides what is due, so a missed tick is caught up.
+  "triggers": { "crons": ["*/5 * * * *"] },
+  // Parsing feeds and pages needs more than the default CPU budget (Workers Paid plan).
+  "limits": { "cpu_ms": 120000 },
+  "placement": { "mode": "smart" },
+  "observability": { "enabled": true }
+  // Secrets (dashboard or `wrangler secret put`): DATABASE_URL, and MCP_TOKEN to enable /mcp.
+}
