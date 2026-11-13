@@ -11,7 +11,7 @@
     "typecheck": "tsc -b packages/core apps/collector apps/api && npm run typecheck -w @aobtd/web",
     "test": "vitest run",
     "test:mutation": "stryker run",
-    "db:migrate": "npm run build -w @aobtd/core && node packages/core/dist/migrate.js",
+    "db:migrate": "npm run build -w @aobtd/core && node packages/core/dist/migrate-cli.js",
     "dev:api": "npm run dev -w @aobtd/api",
     "dev:web": "npm run dev -w @aobtd/web",
     "dev:collector": "npm run dev -w @aobtd/collector"
@@ -26,6 +26,7 @@
     "@vitest/coverage-v8": "^5.1.0",
     "tsx": "^4.19.0",
     "typescript": "~5.9.3",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.0",
+    "wrangler": "^4.161.0"
   }
 }
