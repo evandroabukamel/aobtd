@@ -10,7 +10,7 @@ Collection is done by an **MCP server**, which scans each source once a day and 
 
 ```
 apps/collector   MCP server + scheduler: reads the sources, filters, geocodes and stores
-apps/api         HTTP API (Fastify) that also serves the site in production
+apps/api         HTTP API (Hono): a Cloudflare Worker, or a Node server that also serves the site (Docker)
 apps/web         Site in React + Vite + Leaflet
 packages/core    Shared types, database connection and migrations
 ```
@@ -67,6 +67,41 @@ docker compose up --build
 
 - Site and API: http://localhost:3000
 - MCP server (Streamable HTTP): http://localhost:3333/mcp
+
+### On Cloudflare Workers
+
+Each app is its own Worker, with its own `wrangler.jsonc`:
+
+| Worker | Config | What it runs |
+|---|---|---|
+| `aobtd-web` | `apps/web/wrangler.jsonc` | The built site as static assets (SPA fallback). `/api/*` is handed to `aobtd-api` through a service binding, so the browser talks to one origin. |
+| `aobtd-api` | `apps/api/wrangler.jsonc` | The API (Hono), one database connection per request. Not public on workers.dev: reached through the web Worker. |
+| `aobtd-collector` | `apps/collector/wrangler.jsonc` | A cron trigger every 5 minutes that runs the due scans, and `/mcp` behind a bearer token. Needs the Workers Paid plan (feed parsing exceeds the Free plan's CPU limit). |
+
+In **Workers Builds** (each Worker → Settings → Build), point every Worker at its own folder. Running the detection at the repository root fails, because the root is an npm workspace, not an app:
+
+| Worker | Root directory | Build command | Deploy command |
+|---|---|---|---|
+| `aobtd-web` | `apps/web` | `cd ../.. && npm ci && npm run build -w @aobtd/web` | `npx wrangler deploy` |
+| `aobtd-api` | `apps/api` | `cd ../.. && npm ci` | `npx wrangler deploy` |
+| `aobtd-collector` | `apps/collector` | `cd ../.. && npm ci` | `npx wrangler deploy` |
+
+The API and collector need no build step: Wrangler bundles them from TypeScript, including `@aobtd/core` from source. Optional **build watch paths** keep unrelated commits from redeploying a Worker: `apps/<app>/*` and `packages/core/*`.
+
+Settings per Worker:
+
+- `aobtd-api`: secret `DATABASE_URL`.
+- `aobtd-collector`: secret `DATABASE_URL`; secret `MCP_TOKEN` to turn `/mcp` on (clients send `Authorization: Bearer <MCP_TOKEN>`; without it `/mcp` answers 404).
+- `aobtd-web`: optional build variables `VITE_REPO_URL`, `VITE_GITHUB_SPONSORS_URL`, `VITE_KOFI_URL`, `VITE_BUYMEACOFFEE_URL` (see [Project links](#project-links-on-the-site)).
+
+Deploy `aobtd-api` before `aobtd-web` the first time: the web Worker's service binding needs the API Worker to exist. Migrations do not run on Workers; apply them with `npm run db:migrate` (with `DATABASE_URL` set) before deploying a change that needs them.
+
+To run the Workers locally (workerd), put the secrets in a `.dev.vars` file next to each `wrangler.jsonc` (ignored by git), build the site, then:
+
+```bash
+npx wrangler dev -c apps/web/wrangler.jsonc -c apps/api/wrangler.jsonc   # site + API, wired as in production
+npx wrangler dev -c apps/collector/wrangler.jsonc --test-scheduled       # GET /__scheduled runs one cron tick
+```
 
 ### In development
 
