@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { AccidentReader } from '../src/app.js';
 import { createApi, parseOrigins } from '../src/app.js';
+import type { ErrorRecord } from '../src/errorLog.js';
 
 const NOW = new Date('2026-03-15T12:00:00Z');
 
@@ -103,11 +104,37 @@ describe('accidents API', () => {
     expect(await res.json()).toEqual({ error: 'Not found' });
   });
 
-  it('reports a failing database as a 500 without leaking details', async () => {
-    const { api } = setup(fakeReader({ status: async () => Promise.reject(new Error('password authentication failed')) }));
-    const res = await api.request('/api/status');
+  it('reports a failing database as a 500 without leaking details, and logs it', async () => {
+    const logs: ErrorRecord[] = [];
+    const api = createApi(fakeReader({ status: async () => Promise.reject(new Error('password authentication failed')) }), () => NOW, {
+      logError: (r) => logs.push(r),
+    });
+    const res = await api.request('/api/status?x=1', { headers: { 'cf-ray': '8f1a2b3c4d5e6f70-GRU', 'user-agent': 'test-agent' } });
     expect(res.status).toBe(500);
-    expect(await res.text()).not.toContain('password');
+    const body = await res.text();
+    expect(body).not.toContain('password');
+    expect(JSON.parse(body)).toEqual({ error: 'Internal error', requestId: '8f1a2b3c4d5e6f70-GRU' });
+    expect(logs).toHaveLength(1);
+    expect(logs[0]).toMatchObject({
+      level: 'error',
+      event: 'api.error',
+      phase: 'handler',
+      message: 'Error: password authentication failed',
+      error: { name: 'Error', message: 'password authentication failed' },
+      request: { method: 'GET', path: '/api/status', query: '?x=1', ray: '8f1a2b3c4d5e6f70-GRU', userAgent: 'test-agent' },
+    });
+    expect(logs[0]!.error.stack).toContain('password authentication failed');
+    expect(logs[0]!.durationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it('logs nothing for requests that succeed or are rejected by validation', async () => {
+    const logs: ErrorRecord[] = [];
+    const api = createApi(fakeReader(), () => NOW, { logError: (r) => logs.push(r) });
+    await api.request('/api/status');
+    await api.request('/api/accidents?period=bad');
+    await api.request('/api/accidents/999');
+    await api.request('/api/nope');
+    expect(logs).toEqual([]);
   });
 });
 

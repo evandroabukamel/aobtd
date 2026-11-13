@@ -94,6 +94,8 @@ Settings per Worker:
 - `aobtd-collector`: secret `DATABASE_URL`; secret `MCP_TOKEN` to turn `/mcp` on (clients send `Authorization: Bearer <MCP_TOKEN>`; without it `/mcp` answers 404).
 - `aobtd-web`: build variable `VITE_API_URL` with the API's public origin (e.g. `https://aobtd-api.<account>.workers.dev`, https only, no path). Unset, the site calls `/api` on its own origin, which the service binding forwards to `aobtd-api`. Optional build variables `VITE_REPO_URL`, `VITE_GITHUB_SPONSORS_URL`, `VITE_KOFI_URL`, `VITE_BUYMEACOFFEE_URL` (see [Project links](#project-links-on-the-site)).
 
+**API error logs.** The API logs only failures: one JSON object per error (`event: "api.error"`) with the error (name, message, stack, database code, cause chain; passwords in connection strings masked), the request (method, path, query, `cf-ray`, data center, country, origin, user agent) and how long it ran. A 500 response carries the same `cf-ray` as `requestId`, so a user's report leads to the log line. They show up in Workers Logs (Observability, searchable by field) and, with `logpush: true`, in a **Workers trace events** Logpush job, which you create once in the dashboard (Analytics & Logs -> Logpush; Workers Paid plan).
+
 Deploy `aobtd-api` before `aobtd-web` the first time: the web Worker's service binding needs the API Worker to exist. Migrations do not run on Workers; apply them with `npm run db:migrate` (with `DATABASE_URL` set) before deploying a change that needs them.
 
 To run the Workers locally (workerd), put the secrets in a `.dev.vars` file next to each `wrangler.jsonc` (ignored by git), build the site, then:

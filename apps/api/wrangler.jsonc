@@ -10,7 +10,11 @@
   "alias": { "@aobtd/core": "../../packages/core/src/index.ts" },
   // Run next to the database rather than next to the visitor: one query round trip per request.
   "placement": { "mode": "smart" },
-  "observability": { "enabled": true },
+  // Workers Logs: only what the code logs (errors, as JSON objects); no per-request invocation logs.
+  "observability": { "enabled": true, "logs": { "invocation_logs": false } },
+  // Ships each invocation's errors (Logs, Exceptions, Outcome) to the account's
+  // Workers Trace Events Logpush job (Workers Paid plan; the job is created in the dashboard).
+  "logpush": true,
   // Public, so the site can call it from another origin (VITE_API_URL in the web build).
   // A custom domain (Settings -> Domains & Routes) works too; then this can go back to false.
   "workers_dev": true,

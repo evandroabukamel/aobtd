@@ -6,6 +6,7 @@ import { Hono, type Context } from 'hono';
 import { cors } from 'hono/cors';
 import { etag } from 'hono/etag';
 import { z } from 'zod';
+import { consoleErrorLogger, errorRecord, type ErrorLogger } from './errorLog.js';
 import { getAccident, getMarkers, getStats, getStatus } from './queries.js';
 
 /**
@@ -56,10 +57,19 @@ export const parseOrigins = (value: string | undefined): string[] =>
 export interface ApiOptions {
   /** Sites on another origin allowed to call the API from the browser (CORS). Empty: same origin only. */
   allowedOrigins?: string[];
+  /** Where errors go; console.error by default (Workers Logs / Logpush on Cloudflare). */
+  logError?: ErrorLogger;
 }
 
 export function createApi(reader: AccidentReader, now: () => Date = () => new Date(), options: ApiOptions = {}): Hono {
   const app = new Hono();
+  const logError = options.logError ?? consoleErrorLogger;
+  // Request start, for the error's duration (no Hono context variables: the app type stays plain).
+  const startedAt = new WeakMap<Request, number>();
+  app.use('/api/*', async (c, next) => {
+    startedAt.set(c.req.raw, Date.now());
+    await next();
+  });
   const origins = options.allowedOrigins ?? [];
   if (origins.length > 0) app.use('/api/*', cors({ origin: origins, allowMethods: ['GET', 'HEAD', 'OPTIONS'], maxAge: 86400 }));
   app.use('/api/*', etag());
@@ -106,10 +116,11 @@ export function createApi(reader: AccidentReader, now: () => Date = () => new Da
 
   // A route, not app.notFound: it must still answer when this app is mounted in the Node site.
   app.all('/api/*', (c) => c.json({ error: 'Not found' }, 404));
-  // Logged for the operator; the client never sees database details.
+  // Logged for the operator; the client never sees database details, only the request id to quote.
   app.onError((err, c) => {
-    console.error(err);
-    return c.json({ error: 'Internal error' }, 500);
+    const record = errorRecord(err, 'handler', c.req.raw, startedAt.get(c.req.raw));
+    logError(record);
+    return c.json({ error: 'Internal error', ...(record.request?.ray ? { requestId: record.request.ray } : {}) }, 500);
   });
   return app;
 }
