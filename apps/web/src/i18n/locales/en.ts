@@ -39,4 +39,13 @@ export const en: Messages = {
   reportErrorAction: 'Report it',
   openSource: 'Open source',
   viewCode: 'View the code on GitHub',
+  pixTitle: 'Donate via Pix',
+  pixDescription: 'Scan the QR code in your bank app, or copy the code below.',
+  pixKey: 'Pix key',
+  pixName: 'Name',
+  pixReference: 'Transfer code',
+  pixCopyPaste: 'Pix copy and paste code',
+  pixQrCode: 'Pix QR code',
+  copy: 'Copy',
+  copied: 'Copied',
 };

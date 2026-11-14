@@ -39,4 +39,13 @@ export const de: Messages = {
   reportErrorAction: 'Melden',
   openSource: 'Open Source',
   viewCode: 'Code auf GitHub ansehen',
+  pixTitle: 'Per Pix spenden',
+  pixDescription: 'Scanne den QR-Code in deiner Banking-App oder kopiere den Code unten.',
+  pixKey: 'Pix-Schlüssel',
+  pixName: 'Name',
+  pixReference: 'Überweisungscode',
+  pixCopyPaste: 'Pix-Code zum Kopieren',
+  pixQrCode: 'Pix-QR-Code',
+  copy: 'Kopieren',
+  copied: 'Kopiert',
 };

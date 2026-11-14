@@ -9,6 +9,7 @@ import { FactList } from '../molecules/FactList';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Separator } from '../ui/separator';
+import { PixDialog } from './PixDialog';
 
 interface Props {
   links: SiteLinks;
@@ -70,6 +71,7 @@ export const ProjectSidebar = memo(function ProjectSidebar({ links, status, repo
             {t.starOnGitHub}
           </ExternalLink>
         </Button>
+        {links.pix && <PixDialog pix={links.pix} className={WRAP} />}
       </section>
 
       <Separator />

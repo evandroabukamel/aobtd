@@ -39,4 +39,13 @@ export const uk: Messages = {
   reportErrorAction: 'Повідомте нам',
   openSource: 'Відкритий код',
   viewCode: 'Переглянути код на GitHub',
+  pixTitle: 'Підтримати через Pix',
+  pixDescription: 'Відскануйте QR-код у застосунку банку або скопіюйте код нижче.',
+  pixKey: 'Ключ Pix',
+  pixName: 'Ім’я',
+  pixReference: 'Код переказу',
+  pixCopyPaste: 'Код Pix для копіювання',
+  pixQrCode: 'QR-код Pix',
+  copy: 'Копіювати',
+  copied: 'Скопійовано',
 };

@@ -39,4 +39,13 @@ export const ja: Messages = {
   reportErrorAction: '報告する',
   openSource: 'オープンソース',
   viewCode: 'GitHub でコードを見る',
+  pixTitle: 'Pix で寄付する',
+  pixDescription: '銀行アプリで QR コードを読み取るか、下のコードをコピーしてください。',
+  pixKey: 'Pix キー',
+  pixName: '名前',
+  pixReference: '振込コード',
+  pixCopyPaste: 'Pix コピー＆ペーストコード',
+  pixQrCode: 'Pix の QR コード',
+  copy: 'コピー',
+  copied: 'コピーしました',
 };

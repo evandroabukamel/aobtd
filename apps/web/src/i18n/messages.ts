@@ -46,4 +46,14 @@ export interface Messages {
   reportErrorAction: string;
   openSource: string;
   viewCode: string;
+  /** Pix donation dialog. */
+  pixTitle: string;
+  pixDescription: string;
+  pixKey: string;
+  pixName: string;
+  pixReference: string;
+  pixCopyPaste: string;
+  pixQrCode: string;
+  copy: string;
+  copied: string;
 }

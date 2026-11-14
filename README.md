@@ -111,7 +111,7 @@ Settings per Worker:
 
 - `aobtd-api`: secret `DATABASE_URL`; variable `ALLOWED_ORIGINS` with the site's origin (e.g. `https://aobtd-web.<account>.workers.dev`), comma-separated if more than one. Without it the browser blocks the site's calls.
 - `aobtd-collector`: secret `DATABASE_URL`; secret `MCP_TOKEN` to turn `/mcp` on (clients send `Authorization: Bearer <MCP_TOKEN>`; without it `/mcp` answers 404).
-- `aobtd-web`: build variable `VITE_API_URL` with the API's public origin (e.g. `https://aobtd-api.<account>.workers.dev`, https only, no path). Unset, the site calls `/api` on its own origin, which the service binding forwards to `aobtd-api`. Optional build variables `VITE_REPO_URL`, `VITE_GITHUB_SPONSORS_URL`, `VITE_KOFI_URL`, `VITE_BUYMEACOFFEE_URL` (see [Project links](#project-links-on-the-site)).
+- `aobtd-web`: build variable `VITE_API_URL` with the API's public origin (e.g. `https://aobtd-api.<account>.workers.dev`, https only, no path). Unset, the site calls `/api` on its own origin, which the service binding forwards to `aobtd-api`. Optional build variables `VITE_REPO_URL`, `VITE_GITHUB_SPONSORS_URL`, `VITE_KOFI_URL`, `VITE_BUYMEACOFFEE_URL`, `VITE_PIX_CODE`, `VITE_PIX_KEY`, `VITE_PIX_NAME`, `VITE_PIX_REFERENCE` (see [Project links](#project-links-on-the-site)).
 
 **API error logs.** The API logs only failures: one JSON object per error (`event: "api.error"`) with the error (name, message, stack, database code, cause chain; passwords in connection strings masked), the request (method, path, query, `cf-ray`, data center, country, origin, user agent) and how long it ran. A 500 response carries the same `cf-ray` as `requestId`, so a user's report leads to the log line. They show up in Workers Logs (Observability, searchable by field) and, with `logpush: true`, in a **Workers trace events** Logpush job, which you create once in the dashboard (Analytics & Logs -> Logpush; Workers Paid plan).
 
@@ -196,6 +196,8 @@ The card at the bottom of the sidebar shows the last collection time, the number
 | `VITE_GITHUB_SPONSORS_URL` | GitHub Sponsors |
 | `VITE_KOFI_URL` | Ko-fi |
 | `VITE_BUYMEACOFFEE_URL` | Buy Me a Coffee |
+| `VITE_PIX_CODE` | Pix button (Brazil): opens a dialog with a QR code generated from this "copia e cola" code, which must pass its CRC check |
+| `VITE_PIX_KEY`, `VITE_PIX_NAME`, `VITE_PIX_REFERENCE` | Pix key, recipient name and transfer code shown in that dialog (optional) |
 
 ## Site structure (`apps/web`)
 
@@ -210,9 +212,9 @@ src/
   i18n/              Typed dictionaries per language, Intl formatters, language detection
   presentation/      React, organized with Atomic Design
     components/
-      atoms/         ToggleButton, CloseButton, Badge, StatusMessage, BarMeter
-      molecules/     StatCard, MonthBar, YearSelect, FactList, SourceItem, MapCaption, LanguageSwitcher
-      organisms/     AppHeader, CountersPanel, AccidentPanel, CrashMap
+      atoms/         ToggleButton, CloseButton, Badge, StatusMessage, BarMeter, PixMark, QrCode (lazy-loaded)
+      molecules/     StatCard, MonthBar, YearSelect, FactList, SourceItem, MapCaption, LanguageSwitcher, CopyField
+      organisms/     AppHeader, CountersPanel, AccidentPanel, CrashMap, ProjectSidebar, PixDialog
       templates/     DashboardTemplate (header, map and sidebar)
     pages/           DashboardPage: wires state and queries to the components
     shared/          Small UI helpers

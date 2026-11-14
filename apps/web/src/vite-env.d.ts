@@ -9,6 +9,11 @@ interface ImportMetaEnv {
   readonly VITE_GITHUB_SPONSORS_URL?: string;
   readonly VITE_KOFI_URL?: string;
   readonly VITE_BUYMEACOFFEE_URL?: string;
+  /** Pix donation: the button only shows up when the copy-and-paste code is set and valid. */
+  readonly VITE_PIX_CODE?: string;
+  readonly VITE_PIX_KEY?: string;
+  readonly VITE_PIX_NAME?: string;
+  readonly VITE_PIX_REFERENCE?: string;
 }
 
 interface ImportMeta {
