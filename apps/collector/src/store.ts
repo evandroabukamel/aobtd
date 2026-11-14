@@ -57,7 +57,7 @@ export async function saveArticle(
           AND lat BETWEEN $2::float8 - $5::float8 AND $2::float8 + $5::float8
           AND lng BETWEEN $3::float8 - $6::float8 AND $3::float8 + $6::float8
         ORDER BY abs(extract(epoch FROM occurred_at - $1::timestamptz)) +
-                 ((lat - $2::float8) ^ 2 + (lng - $3::float8) ^ 2) * 1000
+                 ((lat - $2::float8) * (lat - $2::float8) + (lng - $3::float8) * (lng - $3::float8)) * 1000 -- TiDB: x ^ 2 fails for x < 0
         LIMIT 1`,
       [candidate.occurredAt, candidate.lat, candidate.lng, MERGE_WINDOW_HOURS, latDelta, lngDelta],
     );
