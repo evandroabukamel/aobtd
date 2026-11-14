@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
  * Historical backfill of a whole year, outside the daily schedule (ignores the 6h interval).
- * Usage: node dist/backfill.js [year] [days-per-window]
+ * Usage: node dist/backfill.js [year] [days-per-window] [slug,slug,...]
+ *
+ * - With a slug list, only those sources are scanned (e.g. sources just added).
  *
  * - Google News search sources: the "when:Nd" clause is replaced by "after:/before:"
  *   in windows of a few days, because each search returns at most ~100 items.
@@ -38,6 +40,7 @@ async function main() {
   const now = new Date();
   const year = Number(process.argv[2] ?? now.getUTCFullYear());
   const stepDays = Number(process.argv[3] ?? 10);
+  const only = process.argv[4]?.split(',').map((s) => s.trim()).filter(Boolean);
   const db = createPool();
   await migrate(db, log);
   const deps: ScanDeps = { db, geocoder: new NominatimGeocoder(db), log };
@@ -54,7 +57,7 @@ async function main() {
     if (s.status === 'error') totals.errors++;
   };
 
-  for (const source of (await loadSources(db)).filter((s: SourceRow) => s.enabled)) {
+  for (const source of (await loadSources(db)).filter((s: SourceRow) => s.enabled && (!only?.length || only.includes(s.slug)))) {
     if (source.parser !== 'rss') {
       log(`${source.slug}: skipped (HTML source, no reachable history)`);
       continue;

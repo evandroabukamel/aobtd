@@ -1,7 +1,8 @@
 /**
  * Rule-based extraction (no LLM, zero token cost): decides whether a news item is about
  * a manned aircraft crash and tries to pull out location, fatalities, model and date.
- * The keyword lists are multilingual on purpose: they match news in PT, EN, FR and DE.
+ * The keyword lists are multilingual on purpose: they match news in PT, EN, FR, DE and the
+ * Scandinavian languages (NO, SV, DA).
  */
 
 const AIRCRAFT =
@@ -11,11 +12,25 @@ const CRASH =
   /\b(crash(?:es|ed|-lands?|-landed)?|went down|plunged|caiu|cai\b|queda|acidente a[ée]reo|desastre a[ée]reo|se acidentou|s'est [ée]cras[ée]|[ée]crasement|accident d'avion|abgest[üu]rzt|absturz|st[üu]rzt[e]? ab)/i;
 
 /**
+ * Norwegian, Swedish and Danish (NRK, SVT). Kept apart because these words are compounds
+ * ("passasjerfly", "flygolycka") and carry letters outside ASCII, where \b does not work.
+ */
+const NORDIC_LETTER = 'a-zæøåäö';
+const NORDIC_AIRCRAFT = new RegExp(
+  `(?<![${NORDIC_LETTER}])(?:[${NORDIC_LETTER}]*fly(?:et|ene)?|flygplan\\w*|plan(?:et|en)?|helikopter\\w*|seilfly\\w*|segelflyg\\w*|fly(?:styrt|ulykk|golyck|ghaveri)\\w*)(?![${NORDIC_LETTER}])`,
+  'i',
+);
+const NORDIC_CRASH = new RegExp(
+  `(?<![${NORDIC_LETTER}])(?:[${NORDIC_LETTER}]*(?:styrt(?:et|ede|er)?|ulykken?|olycka|olyckan|haveri(?:et)?)|havarer(?:te|t)|störta(?:de|t|r)?|krascha(?:de|t|r)?|n[öø]dland\\w*)(?![${NORDIC_LETTER}])`,
+  'i',
+);
+
+/**
  * Terms that point to an unmanned aircraft or an off-topic story: safety flaws,
  * inspections and lawsuits are not crashes.
  */
 const EXCLUDE =
-  /\b(drones?|uavs?|unmanned|remotely piloted|model (?:aircraft|plane)|aeromodel\w*|vant|missiles?|rockets?|satellites?|foguete|m[íi]sseis?|m[íi]ssil|simulator|simulador|flight sim|stock|market crash|shot down|abatid[oa]s?|abgeschossen|drohnen?|mandates?|inspections?|airworthiness|recalls?|lawsuits?|sues|wrongful death|anniversary|years? after|anos? (?:ap[óo]s|depois)|risks? (?:of|detach\w*)|could)\b/i;
+  /\b(drones?|uavs?|unmanned|remotely piloted|model (?:aircraft|plane)|aeromodel\w*|vant|missiles?|rockets?|satellites?|foguete|m[íi]sseis?|m[íi]ssil|simulator|simulador|flight sim|stock|market crash|shot down|abatid[oa]s?|abgeschossen|drohnen?|mandates?|inspections?|airworthiness|recalls?|lawsuits?|sues|wrongful death|anniversary|years? after|anos? (?:ap[óo]s|depois)|risks? (?:of|detach\w*)|could|dr[öo]nare\w*|skutt ned|skj[øo]t ned|sk[öo]ts ned|nedskj?ut\w*|b[øo]rsen)\b/i;
 
 /**
  * News citing a year before its publication ("Final report on 2024 jet crash"):
@@ -33,12 +48,21 @@ export function isOffTopic(text: string): boolean {
 }
 
 export function isMannedCrash(text: string): boolean {
-  return AIRCRAFT.test(text) && CRASH.test(text) && !EXCLUDE.test(text);
+  return (
+    (AIRCRAFT.test(text) || NORDIC_AIRCRAFT.test(text)) &&
+    (CRASH.test(text) || NORDIC_CRASH.test(text)) &&
+    !EXCLUDE.test(text)
+  );
 }
 
 const NUMBER_WORDS: Record<string, number> = {
   one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
   um: 1, uma: 1, dois: 2, duas: 2, 'três': 3, tres: 3, quatro: 4, cinco: 5, seis: 6, sete: 7, oito: 8, nove: 9, dez: 10,
+};
+
+const NORDIC_NUMBER_WORDS: Record<string, number> = {
+  en: 1, ett: 1, ei: 1, to: 2, 'två': 2, tre: 3, fire: 4, fyra: 4, fem: 5, seks: 6, sex: 6,
+  sju: 7, syv: 7, 'åtte': 8, 'åtta': 8, otte: 8, ni: 9, nio: 9, ti: 10, tio: 10,
 };
 
 export function extractFatalities(text: string): number | undefined {
@@ -53,6 +77,13 @@ export function extractFatalities(text: string): number | undefined {
     const m = text.match(re);
     if (m?.[1]) return value(m[1]);
   }
+  // "Sex döda i flygolycka" / "To omkom" / "3 personer døde". Nordic number words stay apart:
+  // "to" or "sex" read as numbers would break English text ("left to rot").
+  const nordicNum = '(\\d{1,4}|' + Object.keys(NORDIC_NUMBER_WORDS).join('|') + ')';
+  const nordic = text.match(
+    new RegExp(`(?<![\\p{L}\\d])${nordicNum}\\s+(?:personer\\s+|mennesker\\s+|människor\\s+)?(?:döda|dödade|døde|omkom\\w*|omkomne|drept|dræbt|dræbte)(?!\\p{L})`, 'iu'),
+  );
+  if (nordic?.[1]) return NORDIC_NUMBER_WORDS[nordic[1].toLowerCase()] ?? Number(nordic[1]);
   // "matou cantor Rick e outros 4" / "killed the pilot and 3 others"
   const others = text.match(new RegExp(`\\b(?:matou|mata|kill(?:s|ed|ing)?)\\b[^.;]{0,60}?\\b(?:e outr[oa]s|and)\\s+${num}\\s*(?:others|outr|$|\\b)`, 'i'));
   if (others?.[1] && /\b(outr[oa]s|others)\b/i.test(others[0])) return value(others[1]) + 1;
@@ -81,6 +112,7 @@ const PREPOSITIONS = [
   'in', 'near', 'off', 'outside', 'over', 'into', 'at',
   'em', 'perto de', 'próximo a', 'próximo de', 'proximo a', 'no interior de', 'no', 'na',
   'à', 'près de', 'en', 'bei', 'nahe', 'nahe von',
+  'i', 'ved', 'nær', 'vid', 'nära', 'utanför', 'utenfor', 'på',
 ];
 const LOCATION_RE = new RegExp(`\\b(?:${PREPOSITIONS.join('|')})\\s+(?:the\\s+)?(${PLACE})`, 'gu');
 
@@ -92,6 +124,8 @@ const NOT_PLACES = new Set([
   'the', 'a', 'an', 'o', 'os', 'as', 'um', 'uma', 'ntsb', 'faa', 'cenipa', 'bea', 'aaib', 'atsb', 'tsb', 'bfu',
   'reuters', 'ap', 'bbc', 'cessna', 'piper', 'boeing', 'airbus', 'embraer', 'beechcraft', 'robinson', 'bell',
   'brasil', 'brazil', 'day', 'dia', 'video', 'vídeo', 'photos', 'fotos', 'live', 'update',
+  'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag', 'søndag', 'måndag', 'tisdag', 'lördag', 'söndag',
+  'nrk', 'svt', 'tass', 'xinhua', 'yonhap', 'kyodo', 'nhk', 'dgca', 'aaib', 'caac', 'araib', 'jtsb', 'nsia', 'shk',
 ]);
 
 /** Removes the " - Outlet" suffix Google News appends to the title. */
@@ -177,6 +211,6 @@ export function extractLocations(text: string): string[] {
 /** Shifts the date when the text says "yesterday" / "ontem". */
 export function extractOccurredAt(text: string, publishedAt: Date | undefined, now: Date): Date {
   const base = publishedAt && publishedAt.getTime() <= now.getTime() ? publishedAt : now;
-  if (/\b(yesterday|ontem|hier|gestern)\b/i.test(text)) return new Date(base.getTime() - 24 * 3600_000);
+  if (/\b(yesterday|ontem|hier|gestern|i går|igår)(?![a-zæøåäö])/i.test(text)) return new Date(base.getTime() - 24 * 3600_000);
   return base;
 }

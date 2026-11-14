@@ -30,7 +30,7 @@ The control lives in the database: before scanning, the collector "claims" the s
 ### How a news item becomes a marker
 
 1. **Thrifty download:** conditional GET (`ETag`/`Last-Modified`), size limit and timeout. URLs already stored are dropped before any processing.
-2. **Rule-based filter, no LLM** (zero token cost): the item must mention an aircraft and a crash (in Portuguese, English, French or German) and must not be about drones, model aircraft, missiles, satellites, inspections, recalls or lawsuits. Items that cite a year before their publication are follow-ups on old accidents and are dropped too.
+2. **Rule-based filter, no LLM** (zero token cost): the item must mention an aircraft and a crash (in Portuguese, English, French, German, Norwegian, Swedish or Danish) and must not be about drones, model aircraft, missiles, satellites, inspections, recalls or lawsuits. Items that cite a year before their publication are follow-ups on old accidents and are dropped too.
 3. **Extraction:** location, number of fatalities ("6 aboard, no survivors" counts as 6), aircraft model and date ("yesterday" is adjusted). State codes such as MG, SC or NSW are expanded to the full name and country before geocoding.
 4. **Geocoding** with Nominatim (OpenStreetMap), at most 1 query per second and with a permanent cache in the database (not-found places included). Items without an identifiable location don't go on the map.
 5. **Grouping:** items within 60 km and 48h of each other become the same accident, which then lists every source.
@@ -52,8 +52,27 @@ The control lives in the database: before scanning, the collector "claims" the s
 | 18h | ATSB (Australia) | Official body | Google News RSS search |
 | 18h | FAA (USA) | Official body | Google News RSS search |
 | 18h | BFU (Germany) | Official body | Google News RSS search |
+| 00h | TASS (Russia) | Agency | Google News RSS search (`site:tass.com`, English) |
+| 06h | The Moscow Times (Russia) | Agency | Google News RSS search |
+| 12h | MAK / Rosaviatsia (Russia) | Official body | Google News RSS search |
+| 18h | Xinhua (China) | Agency | Google News RSS search (`site:english.news.cn`) |
+| 00h | South China Morning Post (Hong Kong) | Agency | Google News RSS search |
+| 06h | CAAC (China) | Official body | Google News RSS search |
+| 12h | AAIB / DGCA (India) | Official body | Google News RSS search |
+| 18h | The Hindu (India) | Agency | Google News RSS search |
+| 00h | The Indian Express (India) | Agency | Google News RSS search |
+| 06h | Yonhap (South Korea) | Agency | Google News RSS search |
+| 12h | The Korea Herald (South Korea) | Agency | Google News RSS search |
+| 18h | ARAIB (South Korea) | Official body | Google News RSS search |
+| 00h | NHK World (Japan) | Agency | Google News RSS search |
+| 06h | Kyodo News (Japan) | Agency | Google News RSS search |
+| 12h | JTSB (Japan) | Official body | Google News RSS search |
+| 18h | NRK (Norway) | Agency | Google News RSS search, in Norwegian |
+| 00h | SVT (Sweden) | Agency | Google News RSS search, in Swedish |
+| 06h | NSIA / Havarikommisjonen (Norway) | Official body | Google News RSS search, in Norwegian |
+| 12h | SHK / Statens haverikommission (Sweden) | Official body | Google News RSS search, in Swedish |
 
-Reuters, AP and most investigation bodies don't publish their own RSS; for them the Google News search already filters for accidents and returns few items. Sources live in the `sources` table and can be enabled, disabled or moved to another window without code changes.
+Reuters, AP and most investigation bodies don't publish their own RSS; for them the Google News search already filters for accidents and returns few items. Only official bodies and established outlets (agencies, public broadcasters, reference papers) are used, never tabloids. Asian outlets are read in their English editions. Denmark has no source of its own: DR, TV2 and the Danish investigation board are not indexed by Google News. Sources live in the `sources` table and can be enabled, disabled or moved to another window without code changes.
 
 The ASN website currently answers automated requests with HTTP 403, so that source gets no data.
 
@@ -122,6 +141,7 @@ npm run dev:collector         # MCP collector on :3333 with the scheduler on
 
 ```bash
 npm run backfill -w @aobtd/collector -- 2026   # collects a whole year, ignoring the 6h interval
+npm run backfill -w @aobtd/collector -- 2025 10 nrk,svt   # only the listed sources
 npm run repair -w @aobtd/collector             # applies the current extraction rules to stored accidents
 ```
 

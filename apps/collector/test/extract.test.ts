@@ -90,3 +90,39 @@ describe('state codes and no-survivor fatalities', () => {
     expect(mentionsEarlierYear('Plane crashes in 2026 airshow', new Date('2026-05-01'))).toBe(false);
   });
 });
+
+describe('Scandinavian news (NRK, SVT)', () => {
+  it.each([
+    'Helikopterulykke i Abisko nasjonalpark i Sverige',
+    'Passasjerfly styrtet i India',
+    'Småfly havarerte ved Kjeller',
+    'Sex döda i flygolycka i Ohio',
+    'Flygplan nödlandade på åker utanför Västerås',
+    'Helikopter störtade i fjällen',
+  ])('accepts: %s', (t) => expect(isMannedCrash(t)).toBe(true));
+
+  it.each([
+    'Slik gikk det da Emilie Voe Nereng styrtet vin på trening',
+    'Drönare störtade vid flygplatsen',
+    'Ukraina: F-16-plan sköts ned under natten',
+    'Børsen styrtet etter rentehopp',
+  ])('rejects: %s', (t) => expect(isMannedCrash(t)).toBe(false));
+
+  it('finds the location after i / ved / utanför', () => {
+    expect(extractLocations('Helikopterulykke i Abisko nasjonalpark i Sverige')[0]).toBe('Abisko');
+    expect(extractLocations('Småfly havarerte ved Kjeller')[0]).toBe('Kjeller');
+    expect(extractLocations('Flygplan nödlandade på åker utanför Västerås')[0]).toBe('Västerås');
+  });
+
+  it('extracts fatalities', () => {
+    expect(extractFatalities('Sex döda i flygolycka i Ohio')).toBe(6);
+    expect(extractFatalities('To omkom i flyulykke')).toBe(2);
+    expect(extractFatalities('3 personer døde da småfly styrtet')).toBe(3);
+    expect(extractFatalities('The plane was left to rot')).toBeUndefined();
+  });
+
+  it('shifts the date for "i går"', () => {
+    const pub = new Date('2026-11-05T10:00:00Z');
+    expect(extractOccurredAt('Småfly styrtet i går', pub, pub).toISOString()).toBe('2026-11-04T10:00:00.000Z');
+  });
+});
