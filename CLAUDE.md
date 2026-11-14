@@ -34,7 +34,10 @@ A full backfill takes ~1.5 s per Google News request; run it in the background a
 
 - **Production is TiDB Cloud** (PostgreSQL-compatible gateway), which is what `.env` points at. The local
   Docker Postgres (`aobtd-db-1`, `postgres://aobtd:aobtd@localhost:5432/aobtd`) is usually stopped.
-- **`.env` is secret.** Never read or print it; pass it with `--env-file`.
+- **`.env` is secret.** Never read or print it; pass it with `--env-file`. The PreToolUse hook
+  `.claude/hooks/protect-env.mjs` enforces this: it blocks any tool call that reads `.env`, `.env.*` or
+  `.dev.vars` (`.env.example` is allowed), and any call whose input contains one of their values.
+  Values in `*.env.example` and `VITE_*` values are public and exempt. Use placeholders in docs.
 - TiDB gaps: no `make_timestamptz`; `x ^ 2` errors when x < 0 (write `x * x`); `GROUP BY a.id` alone is rejected, so list every selected column.
   Compute time windows in TypeScript (`packages/core/src/time.ts`) and pass them as parameters.
   Don't write tests for TiDB quirks.
