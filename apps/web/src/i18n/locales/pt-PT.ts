@@ -39,4 +39,13 @@ export const ptPT: Messages = {
   reportErrorAction: 'Avise-nos',
   openSource: 'Código aberto',
   viewCode: 'Ver o código no GitHub',
+  pixTitle: 'Doe por Pix',
+  pixDescription: 'Leia o código QR na app do seu banco ou copie o código abaixo.',
+  pixKey: 'Chave Pix',
+  pixName: 'Nome',
+  pixReference: 'Código da transferência',
+  pixCopyPaste: 'Código Pix copia e cola',
+  pixQrCode: 'Código QR do Pix',
+  copy: 'Copiar',
+  copied: 'Copiado',
 };

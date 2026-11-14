@@ -39,4 +39,13 @@ export const ru: Messages = {
   reportErrorAction: 'Сообщите нам',
   openSource: 'Открытый исходный код',
   viewCode: 'Посмотреть код на GitHub',
+  pixTitle: 'Пожертвовать через Pix',
+  pixDescription: 'Отсканируйте QR-код в приложении банка или скопируйте код ниже.',
+  pixKey: 'Ключ Pix',
+  pixName: 'Имя',
+  pixReference: 'Код перевода',
+  pixCopyPaste: 'Код Pix для копирования',
+  pixQrCode: 'QR-код Pix',
+  copy: 'Копировать',
+  copied: 'Скопировано',
 };

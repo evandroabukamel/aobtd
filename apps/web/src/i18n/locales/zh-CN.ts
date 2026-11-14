@@ -39,4 +39,13 @@ export const zhCN: Messages = {
   reportErrorAction: '告诉我们',
   openSource: '开源',
   viewCode: '在 GitHub 上查看代码',
+  pixTitle: '通过 Pix 捐助',
+  pixDescription: '用银行应用扫描二维码，或复制下方的代码。',
+  pixKey: 'Pix 密钥',
+  pixName: '姓名',
+  pixReference: '转账代码',
+  pixCopyPaste: 'Pix 复制粘贴码',
+  pixQrCode: 'Pix 二维码',
+  copy: '复制',
+  copied: '已复制',
 };

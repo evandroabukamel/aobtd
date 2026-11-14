@@ -2,6 +2,8 @@
  * Project links, read at build time from VITE_* variables (see .env.example).
  * Only https URLs are accepted, so a bad value can never become a script link.
  */
+import { isValidPixCode, type PixDetails } from '../domain/pix';
+
 export interface DonationLink {
   id: 'github-sponsors' | 'kofi' | 'buymeacoffee';
   label: string;
@@ -11,6 +13,8 @@ export interface DonationLink {
 export interface SiteLinks {
   repo: string;
   donations: DonationLink[];
+  /** Pix transfer details; set only when VITE_PIX_CODE is a valid copy-and-paste code. */
+  pix?: PixDetails;
 }
 
 const DEFAULT_REPO = 'https://github.com/evandroabukamel/aobtd';
@@ -25,6 +29,15 @@ export function safeUrl(value: string | undefined): string | undefined {
   }
 }
 
+const text = (value: string | undefined) => value?.trim() || undefined;
+
+export function readPix(env: ImportMetaEnv): PixDetails | undefined {
+  const code = text(env.VITE_PIX_CODE);
+  if (!code || !isValidPixCode(code)) return undefined;
+  const optional = { key: text(env.VITE_PIX_KEY), name: text(env.VITE_PIX_NAME), reference: text(env.VITE_PIX_REFERENCE) };
+  return { code, ...Object.fromEntries(Object.entries(optional).filter(([, v]) => v)) };
+}
+
 export function readSiteLinks(env: ImportMetaEnv): SiteLinks {
   const candidates: [DonationLink['id'], string, string | undefined][] = [
     ['github-sponsors', 'GitHub Sponsors', env.VITE_GITHUB_SPONSORS_URL],
@@ -37,6 +50,7 @@ export function readSiteLinks(env: ImportMetaEnv): SiteLinks {
       const url = safeUrl(raw);
       return url ? [{ id, label, url }] : [];
     }),
+    pix: readPix(env),
   };
 }
 

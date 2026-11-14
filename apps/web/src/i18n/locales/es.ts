@@ -39,4 +39,13 @@ export const es: Messages = {
   reportErrorAction: 'Avísanos',
   openSource: 'Código abierto',
   viewCode: 'Ver el código en GitHub',
+  pixTitle: 'Donar por Pix',
+  pixDescription: 'Escanea el código QR en la app de tu banco o copia el código de abajo.',
+  pixKey: 'Clave Pix',
+  pixName: 'Nombre',
+  pixReference: 'Código de la transferencia',
+  pixCopyPaste: 'Código Pix copia y pega',
+  pixQrCode: 'Código QR de Pix',
+  copy: 'Copiar',
+  copied: 'Copiado',
 };

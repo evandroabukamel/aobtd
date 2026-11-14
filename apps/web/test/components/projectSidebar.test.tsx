@@ -36,4 +36,30 @@ describe('ProjectSidebar', () => {
     expect(new URL(href).searchParams.get('title')).toBe('Wrong data: accident #7 (Madagascar)');
     expect(new URL(href).searchParams.get('body')).toContain(`Page: ${location.origin}${location.pathname}`);
   });
+
+  it('hides the Pix button when no Pix code is configured', () => {
+    renderWithI18n(<ProjectSidebar links={links} status={undefined} reportTarget={null} />);
+    expect(screen.queryByRole('button', { name: /pix/i })).not.toBeInTheDocument();
+  });
+
+  it('opens the Pix dialog with the QR code, the recipient and a copyable code', async () => {
+    const code = '00020126330014BR.GOV.BCB.PIX0111123456789015204000053039865802BR5901A6001B62070503***6304ABCD';
+    const pix = { code, key: 'key-123', name: 'Jane Doe', reference: 'AircraftCrashMonitor' };
+    const { user } = renderWithI18n(<ProjectSidebar links={{ ...links, pix }} status={undefined} reportTarget={null} />);
+
+    await user.click(screen.getByRole('button', { name: 'Donate via Pix' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Donate via Pix' });
+    expect(await screen.findByRole('img', { name: 'Pix QR code' })).toBeInTheDocument();
+    expect(dialog).toHaveTextContent('key-123');
+    expect(dialog).toHaveTextContent('Jane Doe');
+    expect(dialog).toHaveTextContent('AircraftCrashMonitor');
+    const field = screen.getByLabelText('Pix copy and paste code');
+    expect(field).toBeDisabled();
+    expect(field).toHaveValue(code);
+
+    await user.click(screen.getByRole('button', { name: 'Copy' }));
+    // user-event replaces the clipboard with an in-memory stub.
+    expect(await navigator.clipboard.readText()).toBe(code);
+    expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument();
+  });
 });
